@@ -168,7 +168,7 @@ def load_data(file_path: str) -> pd.DataFrame:
         'lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium', 'nitraat', 'nitriet', 'platina', 'praseodymium',
         'rubidium', 'samarium', 'seleniet', 'selenaat', 'siliciumdioxide', 'sulfaat', 'tantalium', 'tellurium',
         'terbium', 'thallium', 'thorium', 'thulium', 'wolfraam', 'ytterbium', 'yttrium', 'zirkonium',
-        'titaan', 'scandium', 'chlorofyl-a',
+        'titaan', 'scandium', 'chlorofyl-a'
     ]
 
     base_stofnaam = df['Stof'].str.replace(r' \(totaal\)| \(opgelost\)', '', regex=True).str.strip()
@@ -773,9 +773,14 @@ def main():
     # --- TAB 4: Risicoanalyse Stoffen zonder Normen ---
     with tab4:
         st.header("⚠️ Risicoanalyse (Signaleringswaarden)")
-        st.info("Deze analyse toont stoffen waarvan **geen MKN normen** bekend zijn. Voor deze stoffen wordt getoetst aan een generieke signaleringswaarde van **0.1 ug/l**. Zie beoordelingskader overschrijding signaleringswaarden voor prioritering en risico-analyse.")
+        st.info("Deze analyse toont stoffen waarvan **geen MKN normen** bekend zijn. Voor deze stoffen wordt getoetst aan een generieke signaleringswaarde van **0.1 ug/l**. Er wordt enkel gekeken naar **aangetroffen waarden** (boven de rapportagegrens).")
 
+        # 1. Selecteer stoffen met een signaleringswaarde
         df_risico = df_main.dropna(subset=['Signaleringswaarde']).copy()
+
+        # 2. FILTER: Verwijder metingen onder de rapportagegrens (<)
+        # We kijken of het limietsymbool een '<' bevat. De tilde (~) draait de selectie om (behoud wat GEEN < heeft).
+        df_risico = df_risico[~df_risico['Limietsymbool'].astype(str).str.contains('<', na=False)]
 
         if not df_risico.empty:
 
@@ -795,14 +800,14 @@ def main():
                     risico_summary_filtered.sort_values('Risico_Score', ascending=False),
                     x='Stof',
                     y='Risico_Score',
-                    title='Percentage Metingen Boven Signaleringswaarde (0.1 ug/l)',
+                    title='Percentage Aangetroffen Metingen Boven Signaleringswaarde (0.1 ug/l)',
                     labels={'Risico_Score': 'Risico Score (%)'},
                     color_continuous_scale=px.colors.sequential.Reds,
                     color='Risico_Score'
                 )
                 st.plotly_chart(fig_risico, use_container_width=True)
             else:
-                st.success("Geen overschrijdingen van de signaleringswaarde gevonden in de getoetste stoffen.")
+                st.success("Geen overschrijdingen van de signaleringswaarde gevonden in de aangetroffen stoffen.")
 
             st.subheader("Actuele Risico-overschrijdingen")
 
@@ -814,9 +819,9 @@ def main():
                     use_container_width=True
                 )
             else:
-                st.success("Er zijn wel stoffen zonder norm gemeten (die voldoen aan de criteria), maar geen enkele meting kwam boven de 0.1 ug/l uit.")
+                st.success("Er zijn stoffen zonder norm aangetroffen, maar geen enkele meting kwam boven de 0.1 ug/l uit.")
         else:
-            st.warning("Geen metingen gevonden die voldoen aan de criteria: (1) Geen JG-MKN, (2) Totaal gehalte, (3) Eenheid ug/l.")
+            st.warning("Geen aangetroffen metingen (boven rapportagegrens) gevonden voor stoffen zonder norm (ug/l).")
 
     # --- TAB 5: PFAS effectbeoordeling ---
     with tab5:
