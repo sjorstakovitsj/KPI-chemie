@@ -1196,7 +1196,7 @@ def main():
                 },
                 center={"lat": center_lat, "lon": center_lon},
                 mapbox_style="open-street-map",
-                zoom=10, 
+                zoom=7.5, 
                 title="Gemiddelde waarde per locatie (van geselecteerde stoffen)"
             )
         
@@ -1321,7 +1321,7 @@ def main():
             st.plotly_chart(fold_change_fig, use_container_width=True)
             
         # Toon de gefilterde data
-        st.write("Gefilterde data:", df_space)       
+        #st.write("Gefilterde data:", df_space)       
 
 if __name__ == "__main__":
     main()
