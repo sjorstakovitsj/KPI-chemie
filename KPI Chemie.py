@@ -1,27 +1,8 @@
-"""
-Waterkwaliteit KPI Dashboard
-============================
-
-Dit script genereert een interactief dashboard voor de analyse van chemische waterkwaliteit
-met behulp van Streamlit. Het visualiseert meetdata, toetst aan KRW-normen, voert
-risicoanalyses uit en analyseert PFAS-toxiciteit.
-
-Afhankelijkheden:
-    - streamlit
-    - pandas
-    - plotly
-    - datetime
-
-Bestandsvereisten:
-    - IJG Chemie.csv: De ruwe meetdata.
-    - KRW stoffen koppeltabel.csv: Normen voor JG-MKN en MAC-MKN.
-    - PFAS PEQ koppeltabel.csv: RPF en RBF factoren voor PFAS.
-"""
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 from datetime import datetime
 
 # --- CONFIGURATIE EN CONSTANTEN ---
@@ -33,23 +14,6 @@ PFAS_FILE_PATH = 'PFAS PEQ koppeltabel.csv'
 
 @st.cache_data
 def load_data(file_path: str) -> pd.DataFrame:
-    """
-    Laadt de waterkwaliteitsdata, schoont deze op en koppelt KRW-normen.
-
-    Deze functie voert de volgende processen uit:
-    1.  **Data Inlezen:** Leest de CSV in en hernoemt kolommen naar leesbare namen.
-    2.  **Preprocessing:** Converteert datums en getallen, en specificeert stofnamen
-        (onderscheid tussen 'totaal' en 'opgelost' op basis van hoedanigheid).
-    3.  **Normen Koppelen:** Leest de KRW-normtabel in, transformeert deze en koppelt
-        JG-MKN en MAC-MKN waarden aan de meetdata via een 'left join'.
-    4.  **Signaleringswaarden:** Berekent een generieke signaleringswaarde (0.1 ug/l)
-        voor stoffen zonder norm, exclusief metalen en specifieke elementen.
-
-    :param file_path: Pad naar het CSV-bestand met meetgegevens.
-    :type file_path: str
-    :return: Een DataFrame met opgeschoonde meetwaarden, gekoppelde normen en signaleringswaarden.
-    :rtype: pd.DataFrame
-    """
     # 1. Laden Meetdata
     try:
         df = pd.read_csv(file_path, delimiter=';', low_memory=False, encoding='latin-1')
@@ -184,21 +148,15 @@ def load_data(file_path: str) -> pd.DataFrame:
 
     st.session_state.last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # Voeg de stofgroep kolom toe
+    df['Stofgroep'] = df['Stof'].apply(bepaal_stofgroep)
+
     return df
 
 
 @st.cache_data
 def load_pfas_ref(file_path: str) -> pd.DataFrame:
-    """
-    Laadt de PFAS koppeltabel en converteert numerieke waarden.
 
-    Zet string-getallen (met komma's) om naar floats voor de kolommen 'RPF' en 'RBF'.
-
-    :param file_path: Pad naar het CSV-bestand met PFAS referentiedata.
-    :type file_path: str
-    :return: DataFrame met PFAS factoren.
-    :rtype: pd.DataFrame
-    """
     try:
         df_pfas = pd.read_csv(file_path, dtype=str)
         df_pfas.columns = df_pfas.columns.str.strip()
@@ -216,21 +174,7 @@ def load_pfas_ref(file_path: str) -> pd.DataFrame:
 
 
 def create_gauge(percentage: float, title_text: str = "Metingen onder Norm") -> go.Figure:
-    """
-    Genereert een Plotly gauge-grafiek (snelheidsmeter).
 
-    De meter toont een score van 0 tot 100.
-    - Groen: 80-100% (Goed)
-    - Grijs: 0-80%
-    - Rode drempelwaarde op 80.
-
-    :param percentage: De weer te geven waarde (0-100).
-    :type percentage: float
-    :param title_text: De titel boven de meter.
-    :type title_text: str
-    :return: Een Plotly Figure object.
-    :rtype: go.Figure
-    """
     fig = go.Figure(go.Indicator(
         mode = "gauge+number",
         value = percentage,
@@ -248,32 +192,15 @@ def create_gauge(percentage: float, title_text: str = "Metingen onder Norm") -> 
 
 
 def bepaal_stofgroep(stofnaam: str) -> str:
-    """
-    Categoriseert een stofnaam in een groep op basis van vooraf gedefinieerde trefwoorden.
 
-    De volgende categorieën worden herkend:
-    - PFAS
-    - Metalen & elementen
-    - Nutriënten & algemeen
-    - PAKs/PCBs/PBDEs
-    - Bestrijdingsmiddelen
-    - Geneesmiddelen
-    - Vluchtige organische stoffen (BTEX)
-    - Industriestoffen & overigen
-
-    :param stofnaam: De naam van de stof.
-    :type stofnaam: str
-    :return: De naam van de categorie.
-    :rtype: str
-    """
     s = stofnaam.lower()
 
-    pfas_keywords = ['perfluor-2-propoxypropaanzuur', 'perfluor-1-octaansulfonaat (lineair)', 'perfluoroctaanzuur', 'perfluorbutaanzuur', 'perfluorpentaansulfonzuur', 'perfluorhexaanzuur', 'pfhpa', 'perfluornonaansulfonzuur', 'perfluordecaanzuur', 'genx', 'perfluor', 'adona', 'N-ethyl-perfluoroctaan sulfonamidoazijnzuur', 'N-methyl-perfluoroctaan sulfonamidoazijnzuur',
+    pfas = ['perfluor-2-propoxypropaanzuur', 'perfluor-1-octaansulfonaat (lineair)', 'perfluoroctaanzuur', 'perfluorbutaanzuur', 'perfluorpentaansulfonzuur', 'perfluorhexaanzuur', 'pfhpa', 'perfluornonaansulfonzuur', 'perfluordecaanzuur', 'genx', 'perfluor', 'adona', 'N-ethyl-perfluoroctaan sulfonamidoazijnzuur', 'N-methyl-perfluoroctaan sulfonamidoazijnzuur',
                      'N-methylperfluorbutaansulfonamide', 'perfluor-3-methoxypropaanzuur', 'perfluor-3,6-dioxaheptaanzuur', 'perfluor-4-methoxybutaanzuur', 'perfluor(2-ethoxyethaan)sulfonzuur', 'perfluorbutaansulfonamide', 'perfluorbutaansulfonzuur', 'perfluordecaansulfonzuur', '4,8-dioxa-3H-perfluornonaanzuur', '4:2 fluortelomeersulfonzuur', '6:2 fluortelomeersulfonzuur',
                      'perfluordodecaanzuur', 'perfluorheptaansulfonzuur', 'perfluorheptaanzuur', 'perfluorhexaansulfonamide', 'perfluorhexaansulfonzuur', 'perfluornonaanzuur', 'perfluoroctaansulfonamide', '8:2 fluortelomeersulfonzuur', '9-chloorhexadecaanfluor-3-oxanon-1-sulfonzuur',
                      'perfluorpentaanzuur', 'perfluortetradecaanzuur', 'perfluortridecaanzuur', 'perfluorundecaanzuur', 'Som hexadecafluor-2-deceenzuur-isomerenÂ ', 'som vertakte perfluorhexaansulfonzuur-isomeren',
                      'som vertakte perfluoroctaansulfonzuur-isomeren', '10:2 fluortelomeersulfonzuur', '11-chlooreicosafluor-3-oxaundecaan-1-sulfonzuur', 'som hexadecafluor-2-deceenzuur-isomerenâ']
-    if any(k in s for k in pfas_keywords):
+    if any(k in s for k in pfas):
         return 'PFAS'
 
     metalen = ['aluminium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor', 'cadmium', 'calcium', 'cerium', 'cesium', 'chroom', 'cobalt', 'kobalt', 'dysprosium', 'erbium', 'europium', 'kalium', 'koper', 'kwik',
@@ -328,17 +255,7 @@ def bepaal_stofgroep(stofnaam: str) -> str:
 
 
 def main():
-    """
-    De hoofdfunctie die de Streamlit applicatie opbouwt.
 
-    Deze functie verzorgt de layout, tabs en visualisaties:
-    1.  **Toestand & Trend:** Interactieve scatterplots met facetting.
-    2.  **KRW Normtoetsing:** Barcharts voor JG-MKN en MAC-MKN overschrijdingen.
-    3.  **Overzicht Toestand & Kaart:** Dashboard meters en kaartweergave.
-    4.  **Risicoanalyse:** Analyse van stoffen zonder norm vs. signaleringswaarde.
-    5.  **Effectbeoordeling PFAS:** PEQ berekeningen en visualisatie van toxiciteit.
-    6.  **Herkomst en verdeling:** Piecharts en tabellen voor stofgroepen.
-    """
     st.set_page_config(layout="wide", page_title="Waterkwaliteit KPI Dashboard")
 
     st.title("💧 Chemisch Waterkwaliteit KPI Dashboard")
@@ -353,13 +270,14 @@ def main():
         st.error("🚨 Kritieke Fout: De geladen en opgeschoonde data is leeg. Controleer de invoer CSV of de opschoningsstappen in de code.")
         st.stop()
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📈 Toestand & Trend",
         "✅ KRW Normtoetsing",
         "📊 Overzicht Toestand & Kaart",
         "⚠️ Risicoanalyse (Signaleringswaarden)",
         "Effectbeoordeling PFAS",
-        "Herkomst en verdeling van stoffen"
+        "Herkomst en verdeling van stoffen",
+        "Ruimtelijke analyse"
     ])
 
     # --- TAB 1: Toestand & Trend Ontwikkeling ---
@@ -954,7 +872,7 @@ def main():
         df_herkomst = df_herkomst.dropna(subset=['Stof'])
         
         # Voeg stofgroep toe
-        df_herkomst['Stofgroep'] = df_herkomst['Stof'].apply(bepaal_stofgroep)
+        #df_herkomst['Stofgroep'] = df_herkomst['Stof'].apply(bepaal_stofgroep)
 
         # Maak een subset voor alleen waarden boven de rapportagegrens
         # We filteren rijen weg waar een '<' in het Limietsymbool staat
@@ -1109,6 +1027,301 @@ def main():
             st.dataframe(df_onbekend_unique, use_container_width=True)
         else:
             st.success("Alle gemeten stoffen zijn succesvol ingedeeld in een categorie.")
+            
+# --- TAB 7: Ruimtelijke analyse ---
+    with tab7:
+        st.header("🔍 Ruimtelijke analyse")
+        st.markdown("Selecteer filters om data te analyseren.")
+
+        # Maak een kopie van df_main om bewerkingen op uit te voeren
+        df_space = df_main.copy()
+
+        # Datumbereik bepalen voor de date pickers
+        min_date = df_space['Datum'].min().date() if not df_space['Datum'].isnull().all() else datetime.date(2023, 1, 1)
+        max_date = df_space['Datum'].max().date() if not df_space['Datum'].isnull().all() else datetime.date(2025, 12, 31)
+
+        # Gegevens voor dropdowns (opties)
+        loc_opties_all = sorted(df_space['Meetpunt'].unique())
+        stof_opties = sorted(df_space['Stof'].unique())
+        fold_change_opties = sorted(df_space['Meetpunt'].unique())
+        default_stoffen = df_space['Stof'].value_counts().head(5).index.tolist() if not df_space.empty else []
+    
+        # Haal unieke jaren op uit de data
+        if not df_space.empty and 'Datum' in df_space.columns:
+            jaar_opties = sorted(df_space['Datum'].dt.year.unique())
+        else:
+            jaar_opties = []
+
+        # --- Rijk 1: Filters (Nu over 2 rijen verdeeld voor duidelijkheid) ---
+        with st.container():
+            # Rij 1: Tijdinstellingen (Jaar, Zomer, Datum bereik)
+            col_jaar, col_zomer, col_start, col_end = st.columns([2, 1.5, 2, 2])
+            
+            # A. Jaar Selectie
+            jaren_selected = col_jaar.multiselect(
+                "Selecteer Jaar/Jaren",
+                options=jaar_opties,
+                default=jaar_opties, # Standaard alles geselecteerd
+                #key=f"jaar_{'KPI'}"
+            )
+
+            # B. Zomerhalfjaar Schakelaar
+            col_zomer.write("") 
+            col_zomer.write("") 
+            zomerhalfjaar = col_zomer.checkbox(
+                "Alleen Zomerhalfjaar\n(1 apr - 30 sep)", 
+                value=False,
+                #key=f"zomer_{dashboard_titel}"
+            )
+
+            # C. Datum Pickers (als extra verfijning)
+            start_date = col_start.date_input(
+                "Startdatum (verfijning)", 
+                value=min_date, 
+                min_value=min_date, 
+                max_value=max_date,
+                #key=f"start_{dashboard_titel}"
+            )
+
+            end_date = col_end.date_input(
+                "Einddatum (verfijning)", 
+                value=max_date, 
+                min_value=min_date, 
+                max_value=max_date,
+                #key=f"end_{dashboard_titel}"
+            )
+
+            # Rij 2: Locatie en stof instellingen
+            col_loc, col_stof = st.columns([3, 3])
+
+            #D. Meetpunt
+            meetpunt_options = loc_opties_all 
+                
+            locaties_selected = col_loc.multiselect(
+                "Meetpunt",
+                options=meetpunt_options,
+                default=meetpunt_options,
+                #key=f"locatie_{dashboard_titel}"
+            )
+
+            # E. Stof
+            stoffen_selected = col_stof.multiselect(
+                "Stof",
+                options=stof_opties,
+                default=default_stoffen,
+                #key=f"stof_{dashboard_titel}"
+            )
+        
+        # ======================================================
+        # DATA FILTEREN
+        # ======================================================
+            
+        dff = df_space
+
+        # NIEUW: 0. Filter op Jaar
+        if jaren_selected:
+            dff = dff[dff['Datum'].dt.year.isin(jaren_selected)].copy()
+
+        # NIEUW: 0b. Filter op Zomerhalfjaar (maand 4 t/m 9)
+        if zomerhalfjaar:
+            # Maand 4 is april, Maand 9 is september
+            dff = dff[(dff['Datum'].dt.month >= 4) & (dff['Datum'].dt.month <= 9)].copy()
+
+        # Datumconversie
+        start_date_dt = pd.to_datetime(start_date)
+        end_date_dt = pd.to_datetime(end_date)
+
+        # 1. Filter op Datum (Verfijning)
+        if start_date_dt and end_date_dt:
+            dff = dff[
+                (dff['Datum'] >= start_date_dt) & 
+                (dff['Datum'] <= end_date_dt)
+            ].copy()
+            
+        # 3. Filter op Meetpunt
+        if locaties_selected:
+            dff = dff[dff['Meetpunt'].isin(locaties_selected)].copy()
+
+        # --- Geen data gevonden fallback ---
+        if dff.empty or locaties_selected is None or not locaties_selected:
+            st.warning("Geen data beschikbaar voor de geselecteerde criteria.")
+            return # Stop de rendering voor dit tabblad
+            
+        # Filter data voor grafieken die afhankelijk zijn van stoffen_selected
+        dff_stof = dff[dff['Stof'].isin(stoffen_selected)].copy() if stoffen_selected else pd.DataFrame(columns=dff.columns)
+        
+        # ======================================================
+        # PLOT GENERATIE
+        # ======================================================
+
+        # --- Tijdlijn Grafiek ---
+        if dff_stof.empty:
+            time_df = pd.DataFrame(columns=['Datum', 'Meetpunt', 'Waarde'])
+        else:
+            time_df = dff_stof.groupby(['Datum', 'Meetpunt'])['Waarde'].mean().reset_index()
+        
+        tijd_fig = px.line(
+            time_df, x="Datum", y="Waarde", color="Meetpunt",
+            title="Gemiddelde waarde (van geselecteerde stoffen) per locatie in de tijd", markers=True)
+        
+        # --- Kaart Grafiek ---
+        # zodat de kaart alleen het gemiddelde toont van de geselecteerde Stofen.
+        
+        # Maak een dataframe met de coördinaten
+        coords = df_main[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().rename(columns={'Latitude': 'lat', 'Longitude': 'lon'})
+            
+        if dff_stof.empty:
+            # Voorkom errors als er nog geen Stof is gekozen
+            loc_df = pd.DataFrame(columns=["Meetpunt", "Waarde", "lat", "lon"])
+        else:
+            loc_df = dff_stof.groupby("Meetpunt")["Waarde"].mean().reset_index().merge(coords, on="Meetpunt", how="left")
+        
+        # Bepaal het midden van de kaart op basis van de beschikbare punten
+        center_lat = loc_df['lat'].mean() if not loc_df.empty else 52.4 
+        center_lon = loc_df['lon'].mean() if not loc_df.empty else 5.6
+
+        if not loc_df.empty:
+            kaart_fig = px.scatter_mapbox(
+                loc_df, 
+                lat="lat", 
+                lon="lon", 
+                color="Waarde", 
+                color_continuous_scale="YlOrRd",
+                size=[12] * len(loc_df) if not loc_df.empty else [], # Voorkomt fout bij lege data
+                hover_name="Meetpunt",
+                hover_data={
+                    "lat": False, 
+                    "lon": False, 
+                    "Waarde": ":.2f"
+                },
+                center={"lat": center_lat, "lon": center_lon},
+                mapbox_style="open-street-map",
+                zoom=10, 
+                title="Gemiddelde waarde per locatie (van geselecteerde stoffen)"
+            )
+        
+        # Rijk 2: Kaart en Tijdlijn
+        col_kaart, col_tijdlijn = st.columns(2)
+        col_kaart.plotly_chart(kaart_fig, use_container_width=True)
+        col_tijdlijn.plotly_chart(tijd_fig, use_container_width=True)
+
+    # --- Plotten die afhankelijk zijn van stofselectie ---
+        if dff_stof.empty:
+            st.warning("Selecteer stoffen om de resterende grafieken te zien.")
+        else:
+            # Rijk 3: Boxplot en Strip Plot
+            col_box, col_strip = st.columns(2)
+        
+        # --- Boxplot Grafiek ---
+        boxplot_fig = px.box(
+            dff_stof, 
+            x="Stof",
+            y="Waarde",
+            color="Meetpunt",
+            points="all", 
+            hover_data=["Datum", "Waarde", "Eenheid"],
+            title='Verdeling per stof(fen) en locatie'
+        )
+        boxplot_fig.update_layout(xaxis_title='Stof', yaxis_title='Waarde')
+        boxplot_fig.update_traces(quartilemethod="exclusive")
+        col_box.plotly_chart(boxplot_fig, use_container_width=True)
+
+        # --- Strip/Dumbbell Plot Grafiek ---
+        dumbbell_fig = px.strip(
+            dff_stof, 
+            x="Waarde", 
+            y="Stof", 
+            color="Meetpunt",
+            stripmode="group",
+            hover_data=["Datum", "Meetpunt", "Waarde"],
+            title='Individuele waarde(n) per stof(fen) en locatie'
+        )
+        dumbbell_fig.update_layout(xaxis_title='Individuele Meetwaarde', yaxis_title='Stof')
+        dumbbell_fig.update_traces(orientation='h')
+        col_strip.plotly_chart(dumbbell_fig, use_container_width=True)
+        
+        # Rijk 4: Heatmap en Subset/Stofgroep
+        col_heat, col_subset = st.columns(2)
+        
+        # --- Heatmap Grafiek ---
+        heat_df = (
+            dff_stof.groupby(["Stof", "Meetpunt"])["Waarde"]
+            .mean().reset_index()
+            .pivot(index="Stof", columns="Meetpunt", values="Waarde")
+        )
+        heat_fig = px.imshow(heat_df, aspect="auto", color_continuous_scale="YlGnBu", text_auto=".3f",
+                            title="Gemiddelde waarden per Stof en Meetpunt")
+        col_heat.plotly_chart(heat_fig, use_container_width=True)
+        
+        # --- Subsetanalyse Grafiek ---
+        subset_df = dff_stof.groupby(["Stof", "Meetpunt"])["Waarde"].mean().reset_index()
+        
+        subset_fig = px.bar(
+            subset_df, 
+            x="Stof", 
+            y="Waarde", 
+            color="Meetpunt",  # Kleur geeft nu het Waterlichaam aan
+            barmode="group",  # Zet de staven naast elkaar in plaats van op elkaar
+            title="Gemiddelde waarde per meetpunt per stof(fen)", 
+            text_auto=".2f"
+        )
+        col_subset.plotly_chart(subset_fig, use_container_width=True)
+        
+        # Rijk 5: Fold Change Analyse
+        st.markdown("---")
+        st.subheader("Log2 Fold Change Analyse")
+        
+        fold_change_ref_selected = st.selectbox(
+            "Selecteer referentielocatie voor Log2Fold Change Analyse",
+            options=fold_change_opties,
+            index=0 if fold_change_opties else None, # Selecteer de eerste als default
+            #key=f"fc_ref_{dashboard_title}" # Unieke key voor elk tabblad
+        )
+        
+        if not fold_change_ref_selected:
+            fold_change_fig = px.scatter(title="Selecteer een referentielocatie voor fc plot")
+            st.plotly_chart(fold_change_fig, use_container_width=True)
+        else:
+            # 1. Bereken gemiddelde waarde per Stof en Meetpunt
+            fold_change_df = dff_stof.groupby(["Stof", "Meetpunt"])["Waarde"].mean().reset_index()
+            
+            # 2. Haal de gemiddelden van de Referentie Locatie op
+            ref_df = fold_change_df[fold_change_df["Meetpunt"] == fold_change_ref_selected].rename(columns={'Waarde': 'Ref_Waarde'})
+            ref_df = ref_df[["Stof", "Ref_Waarde"]]
+            
+            # 3. Merge met de volledige data
+            stof_df = fold_change_df.merge(ref_df, on="Stof", how="left")
+            
+            # 4. Bereken Log2 Fold Change
+            stof_df['Log2_Fold_Change'] = np.log2(stof_df['Waarde'] / stof_df['Ref_Waarde'])
+
+            # 5. Filter de referentie locatie uit de plot
+            plot_df = stof_df[stof_df["Meetpunt"] != fold_change_ref_selected]
+            
+            # 6. Creëer de Fold Change Plot (Scatter plot)
+            fold_change_fig = px.scatter(
+                plot_df, 
+                x="Log2_Fold_Change", 
+                y="Stof", 
+                color="Meetpunt",
+                hover_data={"Log2_Fold_Change": ':.2f', "Waarde": ':.2f', "Ref_Waarde": ':.2f'},
+                title=f"Log2 Fold Change (gemiddeld) t.o.v. {fold_change_ref_selected}"
+            )
+            
+            # 7. Voeg verticale lijnen toe
+            fold_change_fig.add_vline(x=0, line_width=1, line_dash="dash", line_color="red", annotation_text="Geen Verschil", annotation_position="top left")
+            fold_change_fig.add_vline(x=1, line_width=0.5, line_dash="dash", line_color="gray")
+            fold_change_fig.add_vline(x=-1, line_width=0.5, line_dash="dash", line_color="gray")
+
+            fold_change_fig.update_layout(
+                xaxis_title='log2(waarde/waarde referentie)',
+                yaxis_title='Stof'
+            )
+
+            st.plotly_chart(fold_change_fig, use_container_width=True)
+            
+        # Toon de gefilterde data
+        st.write("Gefilterde data:", df_space)       
 
 if __name__ == "__main__":
     main()
