@@ -266,7 +266,7 @@ def main():
 
     st.set_page_config(layout="wide", page_title="Waterkwaliteit KPI Dashboard")
 
-    st.title("💧 Chemisch Waterkwaliteit KPI Dashboard")
+    st.title("💧 Dashboard chemische waterkwaliteit MN")
     if 'last_update' not in st.session_state:
          st.session_state.last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -313,7 +313,7 @@ def main():
     # --- TAB 1: Toestand & Trend Ontwikkeling ---
 # --- TAB 1: Toestand & Trend Ontwikkeling ---
     with tab1:
-        st.header("📈 Toestand en Trend Ontwikkeling")
+        st.header("📈 Toestand en trendontwikkeling")
         st.markdown("Elke geselecteerde stof wordt in een **aparte subplot** weergegeven om de juiste eenheden en schalen te garanderen. Elk punt is een individuele meting.")
         st.info("Voor enkele stoffen is correctie met achtergrondwaardes van toepassing voor de KRW. In deze tool is dat niet meegenomen.")
 
@@ -406,7 +406,7 @@ def main():
                         'Gemeten waarde': 'circle'
                     },
                     facet_row='Stof',
-                    title='Geselecteerde Metingen over Tijd',
+                    title='Geselecteerde metingen over tijd',
                     hover_data={'Datum': True, 'Waarde': ':.4f', 'Eenheid': True, 'Meetpunt': True},
                     category_orders={"Stof": unique_stoffen},
                     height=350 * len(unique_stoffen)
@@ -481,31 +481,49 @@ def main():
         else:
             st.info("Selecteer minstens één meetpunt en één stof om de trend te zien.")
 
-    # --- TAB 2: Normtoetsing met KRW (JG-MKN en MAC-MKN) ---
+# --- TAB 2: Normtoetsing met KRW (JG-MKN en MAC-MKN) ---
     with tab2:
         st.header("✅ KRW Normtoetsing per Meetpunt")
         st.markdown("Analyseer het percentage metingen boven de Kader Richtlijn Water normen (JG-MKN en MAC-MKN) per meetpunt.")
         st.info("Voor enkele stoffen is correctie met achtergrondwaardes van toepassing voor de KRW. In deze tool is dat niet meegenomen.")
         
-        col_filter_1, col_filter_2 = st.columns(2)
+        col_filter_1, col_filter_2, col_filter_3 = st.columns(3)
 
         with col_filter_1:
             all_meetpunten_norm = sorted(df_main['Meetpunt'].unique())
             default_meetpunten_norm = all_meetpunten_norm[:3] if all_meetpunten_norm else []
             selected_meetpunten_norm = st.multiselect(
-                "📍 **Selecteer Meetpunt(en)**",
+                "📍 Selecteer Meetpunt(en)",
                 options=all_meetpunten_norm,
                 default=default_meetpunten_norm,
                 key="tab2_meetpunten_select"
             )
 
         with col_filter_2:
-            all_stoffen_norm = sorted(df_filtered['Stof'].unique())
+            stofgroep_opties = sorted(df_filtered['Stofgroep'].unique())
+            stofgroep_selected_tab2 = st.multiselect(
+                "Selecteer stofgroep",
+                options=stofgroep_opties,
+                default=stofgroep_opties[0] if stofgroep_opties else None,
+                key="tab2_stofgroep_select"
+            )
+
+        with col_filter_3:
+            if stofgroep_selected_tab2:
+                filtered_stoffen_df = df_filtered[df_filtered['Stofgroep'].isin(stofgroep_selected_tab2)]
+                all_stoffen_norm = sorted(filtered_stoffen_df['Stof'].unique())
+            else:
+                all_stoffen_norm = sorted(df_filtered['Stof'].unique())
+
+            # 2. Bepaal slimme defaults (stoffen die daadwerkelijk een norm hebben én in de selectie zitten)
             stoffen_met_norm = df_filtered.dropna(subset=['JG_MKN', 'MAC_MKN'])['Stof'].unique()
-            default_stoffen_norm = sorted(stoffen_met_norm)[:3] if len(stoffen_met_norm) > 0 else []
+            mogelijke_defaults = [s for s in stoffen_met_norm if s in all_stoffen_norm]
+            
+            # Selecteer de eerste 3 beschikbare stoffen die een norm hebben
+            default_stoffen_norm = sorted(mogelijke_defaults)[:3] if mogelijke_defaults else []
 
             selected_stoffen_norm = st.multiselect(
-                "🔎 **Selecteer Stof(fen)**",
+                "🔎 Selecteer stof(fen)",
                 options=all_stoffen_norm,
                 default=default_stoffen_norm,
                 key="tab2_stoffen_select"
@@ -705,11 +723,7 @@ def main():
                         st.plotly_chart(create_gauge(pct_mac_mp, f"MAC-MKN: {meetpunt}"), use_container_width=True, key=f"gauge_mac_{meetpunt}")
                     else:
                         st.info(f"Geen MAC-normen of data voor {meetpunt}")
-
-                # -------------------------------------------------------------------------
-                # NIEUW: Tabel met specifieke overschrijdingen direct ONDER de meters
-                # -------------------------------------------------------------------------
-                
+               
                 # We gebruiken de data van dit specifieke meetpunt (df_mp)
                 df_mp['Overschrijding_JG'] = df_mp.apply(
                     lambda row: row['Waarde'] > row['JG_MKN'] if pd.notna(row['JG_MKN']) else False, axis=1
@@ -774,16 +788,67 @@ def main():
 
 # --- TAB 4: Risicoanalyse Stoffen zonder Normen ---
     with tab4:
-        st.header("⚠️ Risicoanalyse (Signaleringswaarden)")
-        st.info("Deze analyse toont stoffen waarvan **geen MKN normen** bekend zijn. Voor deze stoffen wordt getoetst aan een generieke signaleringswaarde van **0.1 ug/l**. Er wordt enkel gekeken naar **aangetroffen waarden** (boven de rapportagegrens)."
-                " De risicoscore wordt uitgedrukt als de mate waarin een stof wordt aangetroffen boven de signaleringswaarde. Zijn alle waarden hoger dan 0.1, dan is de risicoscore 100%.")
-        st.info("Voor enkele stoffen is uitzondering gemaakt in het toetsen van signaleringswaarden, denk bijv. aan metalen en nutriënten.")
+        st.header("⚠️ Risicoanalyse o.b.v. signaleringswaarden")
+        st.markdown("Deze analyse toont stoffen waarvan **normen** bekend zijn. Deze stoffen wordt getoetst aan een generieke signaleringswaarde van **0.1 ug/l**.")
+        st.info("Er wordt enkel gekeken naar **aangetroffen waarden** (boven de rapportagegrens). De risicoscore is het percentage metingen dat boven de 0.1 ug/l uitkomt.")
 
-        # 1. Selecteer stoffen met een signaleringswaarde
-        df_risico = df_filtered.dropna(subset=['Signaleringswaarde']).copy()
+        # 1. Basis data voorbereiden (alleen stoffen met signaleringswaarde & boven rapportagegrens)
+        df_risico_basis = df_filtered.dropna(subset=['Signaleringswaarde']).copy()
+        df_risico_basis = df_risico_basis[~df_risico_basis['Limietsymbool'].astype(str).str.contains('<', na=False)]
 
-        # 2. FILTER: Verwijder metingen onder de rapportagegrens (<)
-        df_risico = df_risico[~df_risico['Limietsymbool'].astype(str).str.contains('<', na=False)]
+
+        col_risico_1, col_risico_2, col_risico_3 = st.columns(3)
+
+        # 1. Meetpunt Selectie
+        with col_risico_1:
+            meetpunt_opties = sorted(df_risico_basis['Meetpunt'].unique())
+            # Default: Alles selecteren (of niets = alles), hier kiezen we voor 'Alles' als default voor het totaalplaatje
+            selected_meetpunten_risico = st.multiselect(
+                "📍 Selecteer Meetpunt(en)",
+                options=meetpunt_opties,
+                default=meetpunt_opties, # Standaard alles voor goed overzicht
+                key="tab4_meetpunt_select"
+            )
+
+        # 2. Stofgroep Selectie
+        with col_risico_2:
+            stofgroep_opties = sorted(df_risico_basis['Stofgroep'].unique())
+            selected_stofgroep_risico = st.multiselect(
+                "📂 Selecteer Stofgroep",
+                options=stofgroep_opties,
+                default=stofgroep_opties, # Standaard alles
+                key="tab4_stofgroep_select"
+            )
+
+        # 3. Stof Selectie (Afhankelijk van Stofgroep)
+        with col_risico_3:
+            # Filter de beschikbare stoffen op basis van stofgroep
+            if selected_stofgroep_risico:
+                temp_df = df_risico_basis[df_risico_basis['Stofgroep'].isin(selected_stofgroep_risico)]
+                stof_opties = sorted(temp_df['Stof'].unique())
+            else:
+                stof_opties = sorted(df_risico_basis['Stof'].unique())
+
+            selected_stoffen_risico = st.multiselect(
+                "🔎 Selecteer Stof(fen)",
+                options=stof_opties,
+                default=stof_opties, # Standaard alles binnen de gefilterde groepen
+                key="tab4_stof_select"
+            )
+       
+        # We beginnen met de basis set en passen filters toe als er iets geselecteerd is
+        df_risico = df_risico_basis.copy()
+
+        if selected_meetpunten_risico:
+            df_risico = df_risico[df_risico['Meetpunt'].isin(selected_meetpunten_risico)]
+        
+        if selected_stofgroep_risico:
+            df_risico = df_risico[df_risico['Stofgroep'].isin(selected_stofgroep_risico)]
+            
+        if selected_stoffen_risico:
+            df_risico = df_risico[df_risico['Stof'].isin(selected_stoffen_risico)]
+
+        st.markdown("---")
 
         if not df_risico.empty:
 
@@ -1156,7 +1221,11 @@ def main():
 # --- TAB 6: Herkomst en verdeling stoffen ---
     with tab6:
         st.header("🏭 Herkomst en verdeling van stoffen")
-        st.info("Hieronder worden twee zaken getoond: alle uitgevoerde metingen (inclusief < rapportagegrens-waarden) en alleen de daadwerkelijk aangetroffen stoffen (> rapportagegrens).")
+        
+        # ---------------------------------------------------------
+        # DATA VOORBEREIDING (Gebruikt de sidebar filters)
+        # ---------------------------------------------------------
+        st.info("Hieronder worden de gegevens getoond op basis van de **jaren geselecteerd in de zijbalk**.")
 
         df_herkomst = df_filtered.copy()
         df_herkomst = df_herkomst.dropna(subset=['Stof'])
@@ -1164,8 +1233,10 @@ def main():
         # Maak een subset voor alleen waarden boven de rapportagegrens
         df_detecties = df_herkomst[~df_herkomst['Limietsymbool'].astype(str).str.contains('<', na=False)].copy()
 
-        # --- A. TOTAAL OVERZICHT ---
-        st.subheader("Totaalbeeld (alle locaties)")
+        # ---------------------------------------------------------
+        # A. TOTAAL OVERZICHT (Taartdiagrammen, Geselecteerde periode)
+        # ---------------------------------------------------------
+        st.subheader("Totaalbeeld verdeling (Geselecteerde periode)")
         
         st.markdown("### 🟢 uitgevoerde metingen vs. 🟠 aangetroffen")
         
@@ -1215,90 +1286,162 @@ def main():
                 st.warning("Geen waarden boven rapportagegrens gevonden in totale dataset.")
 
         st.divider()
+        
+        # ---------------------------------------------------------
+        # B. TRENDANALYSE STOFGROEPEN (ALLE JAREN)
+        # ---------------------------------------------------------
+        st.subheader("📈 Trendverdeling Stofgroepen (Alle jaren)")
+        st.markdown("Onderstaande grafiek toont de **procentuele** verdeling van de gemeten stofgroepen over de jaren heen. **Let op:** Deze grafiek toont data uit de **volledige dataset**, ongeacht de jaar-filter in de zijbalk.")
 
-        # --- B. PER MEETPUNT ---
-        st.subheader("Overzicht per specifiek meetpunt")
+        # 1. Filteropties voor de trendgrafiek
+        col_trend_sel1, col_trend_sel2 = st.columns([1, 3])
+        
+        with col_trend_sel1:
+            # Checkbox om te kiezen tussen Alle metingen of alleen Detecties
+            alleen_detecties_trend = st.checkbox("Toon alleen aangetroffen stoffen (>RG)", value=False, key="tab6_trend_detectie_checkbox")
+        
+        with col_trend_sel2:
+            all_meetpunten_trend = sorted(df_main['Meetpunt'].unique())
+            selected_meetpunten_trend = st.multiselect(
+                "📍 Selecteer meetpunt(en) voor trendanalyse",
+                options=all_meetpunten_trend,
+                default=all_meetpunten_trend, # Standaard alles selecteren
+                key="tab6_trend_meetpunt_select"
+            )
 
-        meetpunten_list = sorted(df_herkomst['Meetpunt'].unique())
-        selected_mp_herkomst = st.selectbox("Selecteer een meetpunt voor detailanalyse:", meetpunten_list)
+        if selected_meetpunten_trend:
+            # We gebruiken df_main om ALLE jaren te pakken, ongeacht sidebar filter
+            df_trend = df_main[df_main['Meetpunt'].isin(selected_meetpunten_trend)].copy()
 
-        # Dataframes filteren voor meetpunt
-        df_mp_all = df_herkomst[df_herkomst['Meetpunt'] == selected_mp_herkomst]
-        df_mp_det = df_detecties[df_detecties['Meetpunt'] == selected_mp_herkomst]
+            # Filter eventueel op detecties
+            if alleen_detecties_trend:
+                df_trend = df_trend[~df_trend['Limietsymbool'].astype(str).str.contains('<', na=False)]
 
-        if not df_mp_all.empty:
-            col_mp_1, col_mp_2 = st.columns(2)
-
-            # Grafiek Alle Metingen
-            with col_mp_1:
-                st.markdown(f"**{selected_mp_herkomst}: Alle metingen**")
-                dist_mp_all = df_mp_all['Stofgroep'].value_counts().reset_index()
-                dist_mp_all.columns = ['Stofgroep', 'Aantal']
+            if not df_trend.empty:
+                # Jaar kolom aanmaken
+                df_trend['Jaar'] = df_trend['Datum'].dt.year
                 
-                fig_pie_mp_all = px.pie(
-                    dist_mp_all,
-                    values='Aantal',
-                    names='Stofgroep',
-                    title=f'Aantal metingen'
-                )
-                st.plotly_chart(fig_pie_mp_all, use_container_width=True)
-
-            # Grafiek Alleen Detecties
-            with col_mp_2:
-                st.markdown(f"**{selected_mp_herkomst}: > Rapportagegrens**")
-                if not df_mp_det.empty:
-                    dist_mp_det = df_mp_det['Stofgroep'].value_counts().reset_index()
-                    dist_mp_det.columns = ['Stofgroep', 'Aantal']
-                    
-                    fig_pie_mp_det = px.pie(
-                        dist_mp_det,
-                        values='Aantal',
-                        names='Stofgroep',
-                        title=f'Aantal keer aangetroffen'
+                # Aggregeren: Aantal metingen per jaar en stofgroep
+                df_trend_grouped = df_trend.groupby(['Jaar', 'Stofgroep']).size().reset_index(name='Aantal Metingen')
+                
+                # Normaliseren naar 100%
+                df_trend_grouped['Totaal_Jaar'] = df_trend_grouped.groupby('Jaar')['Aantal Metingen'].transform('sum')
+                df_trend_grouped['Percentage'] = (df_trend_grouped['Aantal Metingen'] / df_trend_grouped['Totaal_Jaar']) * 100
+                
+                if not df_trend_grouped.empty:
+                    fig_trend = px.bar(
+                        df_trend_grouped,
+                        x='Jaar',
+                        y='Percentage', # Gebruik de percentage kolom
+                        color='Stofgroep',
+                        title='Procentuele Verdeling Stofgroepen per Jaar (100% Gestapeld)',
+                        labels={'Percentage': 'Percentage van Totaal', 'Jaar': 'Jaar', 'Stofgroep': 'Stofgroep'},
+                        barmode='stack' 
                     )
-                    st.plotly_chart(fig_pie_mp_det, use_container_width=True)
+                    
+                    fig_trend.update_layout(yaxis=dict(range=[0, 100], ticksuffix="%"))
+                    fig_trend.update_xaxes(type='category')
+                    
+                    st.plotly_chart(fig_trend, use_container_width=True)
                 else:
-                    st.info(f"Op meetpunt {selected_mp_herkomst} zijn geen stoffen boven de rapportagegrens aangetroffen.")
-
-            # Detailtabel
-            st.markdown(f"**Details per stofgroep voor {selected_mp_herkomst}**")
-            
-            # Toggle voor tabel weergave
-            toon_alleen_detecties = st.checkbox("Toon in tabel alleen stoffen > Rapportagegrens", value=True)
-            
-            source_df = df_mp_det if toon_alleen_detecties else df_mp_all
-            
-            if not source_df.empty:
-                beschikbare_groepen = source_df['Stofgroep'].unique()
-                selected_groep = st.selectbox("Welke stofgroep wil je in detail zien?", sorted(beschikbare_groepen))
-
-                df_detail_groep = source_df[source_df['Stofgroep'] == selected_groep]
-
-                detail_agg = df_detail_groep.groupby('Stof').agg(
-                    Aantal_Metingen=('Waarde', 'count'),
-                    Gemiddelde_Waarde=('Waarde', 'mean'),
-                    Max_Waarde=('Waarde', 'max'),
-                    Eenheid=('Eenheid', 'first')
-                ).sort_values('Aantal_Metingen', ascending=False).reset_index()
-                
-                # Format getallen
-                detail_agg['Gemiddelde_Waarde'] = detail_agg['Gemiddelde_Waarde'].map('{:,.4f}'.format)
-                detail_agg['Max_Waarde'] = detail_agg['Max_Waarde'].map('{:,.4f}'.format)
-
-                st.dataframe(detail_agg, use_container_width=True)
+                    st.info("Geen data gevonden voor de selectie.")
             else:
-                st.warning("Geen data beschikbaar voor de huidige selectie/filter.")
-
+                st.info("Geen data gevonden voor deze selectie (mogelijk geen detecties).")
         else:
-            st.warning("Geen data gevonden voor dit meetpunt.")
+            st.warning("Selecteer ten minste één meetpunt.")
 
         st.divider()
 
-        # --- C. OVERZICHT ONBEKENDE STOFFEN ---
+        # ---------------------------------------------------------
+        # C. PER MEETPUNT
+        # ---------------------------------------------------------
+        st.subheader("Overzicht per specifiek meetpunt")
+
+        meetpunten_list = sorted(df_herkomst['Meetpunt'].unique())
+        if meetpunten_list:
+            selected_mp_herkomst = st.selectbox("Selecteer een meetpunt voor detailanalyse:", meetpunten_list)
+
+            # Dataframes filteren voor meetpunt
+            df_mp_all = df_herkomst[df_herkomst['Meetpunt'] == selected_mp_herkomst]
+            df_mp_det = df_detecties[df_detecties['Meetpunt'] == selected_mp_herkomst]
+
+            if not df_mp_all.empty:
+                col_mp_1, col_mp_2 = st.columns(2)
+
+                # Grafiek Alle Metingen
+                with col_mp_1:
+                    st.markdown(f"**{selected_mp_herkomst}: Alle metingen**")
+                    dist_mp_all = df_mp_all['Stofgroep'].value_counts().reset_index()
+                    dist_mp_all.columns = ['Stofgroep', 'Aantal']
+                    
+                    fig_pie_mp_all = px.pie(
+                        dist_mp_all,
+                        values='Aantal',
+                        names='Stofgroep',
+                        title=f'Aantal metingen'
+                    )
+                    st.plotly_chart(fig_pie_mp_all, use_container_width=True)
+
+                # Grafiek Alleen Detecties
+                with col_mp_2:
+                    st.markdown(f"**{selected_mp_herkomst}: > Rapportagegrens**")
+                    if not df_mp_det.empty:
+                        dist_mp_det = df_mp_det['Stofgroep'].value_counts().reset_index()
+                        dist_mp_det.columns = ['Stofgroep', 'Aantal']
+                        
+                        fig_pie_mp_det = px.pie(
+                            dist_mp_det,
+                            values='Aantal',
+                            names='Stofgroep',
+                            title=f'Aantal keer aangetroffen'
+                        )
+                        st.plotly_chart(fig_pie_mp_det, use_container_width=True)
+                    else:
+                        st.info(f"Op meetpunt {selected_mp_herkomst} zijn geen stoffen boven de rapportagegrens aangetroffen.")
+
+                # Detailtabel
+                st.markdown(f"**Details per stofgroep voor {selected_mp_herkomst}**")
+                
+                # Toggle voor tabel weergave
+                toon_alleen_detecties = st.checkbox("Toon in tabel alleen stoffen > Rapportagegrens", value=True, key="tab6_detail_detectie_checkbox")
+                
+                source_df = df_mp_det if toon_alleen_detecties else df_mp_all
+                
+                if not source_df.empty:
+                    beschikbare_groepen = source_df['Stofgroep'].unique()
+                    selected_groep = st.selectbox("Welke stofgroep wil je in detail zien?", sorted(beschikbare_groepen))
+
+                    df_detail_groep = source_df[source_df['Stofgroep'] == selected_groep]
+
+                    detail_agg = df_detail_groep.groupby('Stof').agg(
+                        Aantal_Metingen=('Waarde', 'count'),
+                        Gemiddelde_Waarde=('Waarde', 'mean'),
+                        Max_Waarde=('Waarde', 'max'),
+                        Eenheid=('Eenheid', 'first')
+                    ).sort_values('Aantal_Metingen', ascending=False).reset_index()
+                    
+                    # Format getallen
+                    detail_agg['Gemiddelde_Waarde'] = detail_agg['Gemiddelde_Waarde'].map('{:,.4f}'.format)
+                    detail_agg['Max_Waarde'] = detail_agg['Max_Waarde'].map('{:,.4f}'.format)
+
+                    st.dataframe(detail_agg, use_container_width=True)
+                else:
+                    st.warning("Geen data beschikbaar voor de huidige selectie/filter.")
+
+            else:
+                st.warning("Geen data gevonden voor dit meetpunt.")
+        else:
+            st.warning("Geen meetpunten beschikbaar in de gefilterde set.")
+
+        st.divider()
+
+        # ---------------------------------------------------------
+        # D. OVERZICHT ONBEKENDE STOFFEN
+        # ---------------------------------------------------------
         st.subheader("❓ Overzicht categorie 'onbekend'")
         st.info("Onderstaande tabel toont de unieke stoffen die niet automatisch herkend werden door de categoriseringsfunctie.")
 
-        # We kijken hier naar de unieke stoffen uit de HELE dataset (zodat je weet wat je mist in je filters)
+        # We kijken hier naar de unieke stoffen uit de HELE dataset
         df_onbekend = df_herkomst[df_herkomst['Stofgroep'] == 'Onbekend']
 
         if not df_onbekend.empty:
