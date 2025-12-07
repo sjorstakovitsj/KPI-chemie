@@ -194,44 +194,32 @@ def create_gauge(percentage: float, title_text: str = "Metingen onder Norm", dre
 
 def bepaal_stofgroep(stofnaam: str) -> str:
 
-    s = stofnaam.lower()
+    s = stofnaam.lower().strip()
 
     pfas = ['perfluor-2-propoxypropaanzuur', 'perfluor-1-octaansulfonaat (lineair)', 'perfluoroctaanzuur', 'perfluorbutaanzuur', 'perfluorpentaansulfonzuur', 'perfluorhexaanzuur', 'pfhpa', 'perfluornonaansulfonzuur', 'perfluordecaanzuur', 'genx', 'perfluor', 'adona', 'N-ethyl-perfluoroctaan sulfonamidoazijnzuur', 'N-methyl-perfluoroctaan sulfonamidoazijnzuur',
                      'N-methylperfluorbutaansulfonamide', 'perfluor-3-methoxypropaanzuur', 'perfluor-3,6-dioxaheptaanzuur', 'perfluor-4-methoxybutaanzuur', 'perfluor(2-ethoxyethaan)sulfonzuur', 'perfluorbutaansulfonamide', 'perfluorbutaansulfonzuur', 'perfluordecaansulfonzuur', '4,8-dioxa-3H-perfluornonaanzuur', '4:2 fluortelomeersulfonzuur', '6:2 fluortelomeersulfonzuur',
                      'perfluordodecaanzuur', 'perfluorheptaansulfonzuur', 'perfluorheptaanzuur', 'perfluorhexaansulfonamide', 'perfluorhexaansulfonzuur', 'perfluornonaanzuur', 'perfluoroctaansulfonamide', '8:2 fluortelomeersulfonzuur', '9-chloorhexadecaanfluor-3-oxanon-1-sulfonzuur', 'trifluormethaansulfonzuur',
-                     'perfluorpentaanzuur', 'perfluortetradecaanzuur', 'perfluortridecaanzuur', 'perfluorundecaanzuur', 'Som hexadecafluor-2-deceenzuur-isomerenÂ ', 'som vertakte perfluorhexaansulfonzuur-isomeren', 'n-[3-(dimethylamino)propyl]tridecafluorhexaansulfonamide',
-                     'som vertakte perfluoroctaansulfonzuur-isomeren', '10:2 fluortelomeersulfonzuur', '11-chlooreicosafluor-3-oxaundecaan-1-sulfonzuur', 'som hexadecafluor-2-deceenzuur-isomerenâ', 'trifluorazijnzuur']
+                     'perfluorpentaanzuur', 'perfluortetradecaanzuur', 'perfluortridecaanzuur', 'perfluorundecaanzuur', 'Som hexadecafluor-2-deceenzuur-isomerenÂ ', 'som vertakte perfluorhexaansulfonzuur-isomeren', 'n-[3-(dimethylamino)propyl]tridecafluorhexaansulfonamide', "Carboxymethyldimethyl-3-[{(3,3,4,4,5,5,6,6,7,7,8,8,8-tridecafluoroctyl)sulfonyl}amino]propylammonium hydroxide",
+                     'som vertakte perfluoroctaansulfonzuur-isomeren', '10:2 fluortelomeersulfonzuur', '11-chlooreicosafluor-3-oxaundecaan-1-sulfonzuur', 'som hexadecafluor-2-deceenzuur-isomerenâ', 'trifluorazijnzuur', 'tridecafluoroctyl']
     if any(k in s for k in pfas):
         return 'PFAS'
 
-    metalen = ['aluminium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor', 'cadmium', 'calcium', 'cerium', 'cesium', 'chroom', 'cobalt', 'kobalt', 'dysprosium', 'erbium', 'europium', 'kalium', 'koper', 'kwik',
-               'lood', 'gadolinium', 'gallium', 'hafnium', 'magnesium', 'mangaan', 'molybdeen', 'natrium', 'nikkel', 'seleen', 'strontium', 'thallium', 'tin', 'titanium', 'uranium', 'vanadium', 'ijzer', 'zilver', 'zink',
-               'holmium', 'indium','lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium','platina', 'praseodymium', 'rubidium', 'samarium','tantalium', 'tellurium','terbium', 'thallium', 'thorium', 'thulium', 'wolfraam',
-               'ytterbium','yttrium', 'zirkonium', 'titaan', 'scandium', 'arsenaat', 'arseniet', 'selenaat', 'seleniet', 'chroom (zeswaardig)']
-    if any(k in s for k in metalen):
-        return 'Metalen & elementen'
-
-    nutrienten = ['fluoride', 'Biochemisch zuurstofverbruik met allylthioureum', 'chlorofyl-a','siliciumdioxide', 'sulfaat','koolstof organisch','stikstof', 'nitraat', 'nitriet', 'ammonium', 'fosfor', 'fosfaat', 'fosfor totaal', 'chloride', 'zuurstof', 'silicium', 'zwevende stof', 'hardheid', 'temperatuur',
-                  'zuurgraad', 'geleidbaarheid', 'Gloeirest', 'Onopgeloste stoffen', 'stikstof totaal', 'waterstofcarbonaat', 'zuurstof', 'cyanide', 'gloeirest', 'onopgeloste stoffen', 'totaal organisch koolstof', 'chlorofyl fluorescentie in rel. fluorescentie eenh.(rfu)']
-    if any(k in s for k in nutrienten):
-        return 'Nutriënten & algemeen'
-
-    paks_pcbs_pbdes = ['naftaleen', 'antraceen', 'fenantreen', 'fluorantheen', 'benzo(a)', 'benzo(ghi)', 'benzo(k)', 'chryseen', 'pyreen','dibenzo(a,h)antraceen', 'indeno(1,2,3-cd)pyreen', 'som benzo(b)fluorantheen en benzo(j)fluorantheen','som PCB28 en PCB31',
-                       "2,2',3,3',4,4',5,5',6,6'-decabroomdiphenylether", "2,2',3,4,4'-pentabroomdifenylether", "2,2',3,4,4',5,5'-heptachloorbifenyl", "2,2',3,4,4',5'-hexabroomdifenylether", "2,2',3,4,4',5'-hexachloorbifenyl", "2,2',4,4'-tetrabroomdifenylether",
-                       "2,2',4,4',5-pentabroomdifenylether", "2,2',4,4',5,5'-hexabroomdifenylether", "2,2',4,4',5,5'-hexachloorbifenyl", "2,2',4,4',5,6'-hexabroomdifenylether", "2,2',4,4',6-pentabroomdifenylether", "2,2',4,5,5'-pentachloorbifenyl", "2,2',4,5'-tetrabroomdifenylether",
-                       "2,2',5,5'-tetrachloorbifenyl", "2,3',4,4',5-pentachloorbifenyl", "2,4,4'-tribroomdifenylether", 'som pcb28 en pcb31', 'acenaftyleen']
-    if any(k in s for k in paks_pcbs_pbdes):
-        return 'PAKs/PCBs/PBDEs'
-
+    industrie = ['bisfenol-A', 'bisfenol-a', 'pentachloorbenzeen', 'pentachloorfenol', 'som 2,4- en 2,5-dichloorfenol', 'som 4-nonylfenol-isomeren (vertakt)', '2-chloorfenol', '2,3-dichloorfenol', '2,3,4-trichloorfenol', '2,3,4,5-tetrachloorfenol', '2,3,5-trichloorfenol', '2,3,5,6-tetrachloorfenol',
+                 '2,3,6-trichloorfenol', '2,4-dinitrofenol', '2,4,5-trichloorfenol', '2,4,6-trichloorfenol', '2,6-dichloorfenol', '3-chloorfenol', '3,4-dichloorfenol', '3,4,5-trichloorfenol', '3,5-dichloorfenol', '4-chloorfenol', '4-tertiair-octylfenol', '2,3,4,6-tetrachloorfenol',
+                 'di-ethyleentriaminepentaazijnzuur (dtpa)', 'methylmethacrylaat', 'nitrilotriazijnzuur (nta)', 'ethyleendiaminetetraethaanzuur (edta)', 'pyrazol', '1,3,5-triazine-2,4,6-triamine (melamine)', "4,4'-methyleendifenol", "4,4'-sulfonyldifenol", 'cyaanguanidine',
+                 'cyanuurzuur', 'hexamethyleentetramine (urotropine)', 'bis(2-ethylhexyl)ftalaat (dehp)', 'acesulfaam', 'cyclamaat', 'saccharine', 'sucralose', 'tributylfosfaat', 'trifenylfosfaat', 'chlooretheen (vinylchloride)']
+    if any(k in s for k in industrie):
+        return 'Industrie & overigen'
+    
     pesticiden = ['glyfosaat', 'ampa', 'metolachloor', 'imidacloprid', 'mcpa', 'mecoprop', 'terbutylazine', 'abamectine', 'aclonifen', 'alachloor', 'aldrin', 'endosulfan', 'hexachloorcyclohexaan', 'atrazine', 'bentazon', 'bifenox',
-                  'chloorfenvinfos', 'chloortoluron', 'chloridazon' 'heptachloorepoxide', 'cumafos', 'cypermethrin', 'desethylatrazine', 'diazinon', 'dichloorvos', 'dicofol', 'dieldrin', 'dimethenamid-P', 'dimethoaat', 'dinoseb', 'dinoterb',
+                  'chloorfenvinfos', 'chloortoluron', 'chloridazon', 'heptachloorepoxide', 'cumafos', 'cypermethrin', 'desethylatrazine', 'diazinon', 'dichloorvos', 'dicofol', 'dieldrin', 'dimethenamid-P', 'dimethoaat', 'dinoseb', 'dinoterb',
                   'diuron', 'dodine', 'endrin', 'ethylazinfos', 'ethylchloorpyrifos', 'fenamifos', 'fenoxycarb', 'heptachloor', 'heptenofos', 'hexachloorbenzeen', 'hexachloorbutadieen', 'irgarol', 'isodrin', 'isoproturon', 'linuron',
                   'malathion', 'methabenzthiazuron', 'metazachloor', 'methyl-metsulfuron', 'methylazinfos', 'methylpirimifos', 'metolachloor', 'mevinfos', 'monolinuron', 'pirimicarb', 'propazine', 'propiconazol (som cis- en trans-)',
                   'pyrazofos', 'pyridaben', 'pyriproxyfen', 'quinoxyfen', 'simazine', 'teflubenzuron', 'terbutrin', 'terbutylazine', 'thiacloprid', 'tolclofos-methyl', 'trans-heptachloorepoxide', 'triazofos', '2-methyl-4-chloorfenoxyazijnzuur',
                   '2-methyl-4-chloorfenoxyboterzuur', '2,4-dichloorfenoxyazijnzuur', '2,4-dichloorfenoxyboterzuur', '2,4-dichloorfenoxypropionzuur', '2,4,5-trichloorfenoxyazijnzuur', '2,4,5-trichloorfenoxypropionzuur', "2,4'-dichloordifenyltrichloorethaan",
                   "4,4'-dichloordifenyldichloorethaan", "4,4'-dichloordifenyldichlooretheen", "4,4'-dichloordifenyltrichloorethaan", '4,6-dinitro-o-cresol', 'chloridazon', 'dimethenamid-p', 'metabenzthiazuron', 'aminomethylfosfonzuur', 'amisulpride',
                   'deltamethrin', 'diflufenican', 'dimethenamide', 'esfenvaleraat', 'ethylparathion', 'fenitrothion', 'fenthion', 'fipronil', 'fluconazol', 'glufosinaat', 'lambda-cyhalothrin', 'methylparathion', 'trifluraline',
-                  '1,2,4-triazool', '3-(hydroxymethylfosfinoyl)propionzuur']
+                  '1,2,4-triazool', '3-(hydroxymethylfosfinoyl)propionzuur', 'abamectine']
     if any(k in s for k in pesticiden):
         return 'Bestrijdingsmiddelen'
 
@@ -239,10 +227,17 @@ def bepaal_stofgroep(stofnaam: str) -> str:
               'ciprofloxacine', 'claritromycine', 'clindamycine', 'clofibraat', 'clofibrinezuur', 'clozapine', 'desvenlafaxine', 'dimetridazol', 'dipyridamol', 'erytromycine', 'fenazon (antipyrine)', 'fenofibraat', 'fenofibrinezuur', 'furosemide', 'gemfibrozil', 'hydrochloorthiazide',
               'ibuprofen', 'ifosfamide', 'irbesartan', 'johexol', 'jomeprol', 'jopamidol', 'jopromide', 'joxitalaminezuur', 'ketoprofen', 'levonorgestrel', 'lidocaã¯ne', 'lincomycine', 'losartan', 'metoprolol', 'miconazol', 'naproxen', 'norethisteron', 'ofloxacine', 'oxazepam',
               'oxybenzone', 'pentoxifylline', 'pipamperon', 'primidon', 'propranolol', 'sotalol', 'sulfadiazine', 'sulfadimidine', 'sulfamethoxazol', 'sulfapyridine', 'sulfaquinoxaline', 'tiamuline', 'trimethoprim', 'valsartan', 'venlafaxine', 'chlooramfenicol', 'cyclofosfamide',
-              'guanylureum', 'avobenzone', 'octocrilene']
+              'guanylureum', 'avobenzone', 'octocrilene', 'paroxetine', 'fluoxetine']
     if any(k in s for k in pharma):
         return 'Geneesmiddelen'
-
+    
+    paks_pcbs_pbdes = ['naftaleen', 'antraceen', 'fenantreen', 'fluorantheen', 'benzo(a)', 'benzo(ghi)', 'benzo(k)', 'chryseen', 'pyreen','dibenzo(a,h)antraceen', 'indeno(1,2,3-cd)pyreen', 'som benzo(b)fluorantheen en benzo(j)fluorantheen','som PCB28 en PCB31',
+                       "2,2',3,3',4,4',5,5',6,6'-decabroomdiphenylether", "2,2',3,4,4'-pentabroomdifenylether", "2,2',3,4,4',5,5'-heptachloorbifenyl", "2,2',3,4,4',5'-hexabroomdifenylether", "2,2',3,4,4',5'-hexachloorbifenyl", "2,2',4,4'-tetrabroomdifenylether",
+                       "2,2',4,4',5-pentabroomdifenylether", "2,2',4,4',5,5'-hexabroomdifenylether", "2,2',4,4',5,5'-hexachloorbifenyl", "2,2',4,4',5,6'-hexabroomdifenylether", "2,2',4,4',6-pentabroomdifenylether", "2,2',4,5,5'-pentachloorbifenyl", "2,2',4,5'-tetrabroomdifenylether",
+                       "2,2',5,5'-tetrachloorbifenyl", "2,3',4,4',5-pentachloorbifenyl", "2,4,4'-tribroomdifenylether", 'som pcb28 en pcb31', 'acenaftyleen']
+    if any(k in s for k in paks_pcbs_pbdes):
+        return 'PAKs/PCBs/PBDEs'
+    
     btex = ['benzeen', 'tolueen', 'etylbenzeen', 'xyleen', 'styreen', 'chloorbenzeen', 'chlooretheen (vinylchloride)', '1,2-dichloorethaan', '1,3-dichloorpropeen', 'cumeen', 'cyclohexaan', 'dibroomchloormethaan', 'dibroommethaan', 'dichloorbroommethaan', 'dichloormethaan',
             'dicyclopentadieen', 'diisopropylether', 'dimethoxymethaan', 'dimethyldisulfide', 'epichloorhydrine', 'ethylbenzeen', 'hexachloorethaan', 'methyl-tertiair-butylether', 'som 1,3- en 1,4-xyleen', 'tertiair-butylbenzeen', '2-ethyltolueen',
             'tetrachlooretheen (per)', 'tetrachloormethaan (tetra)', 'trans-1,2-dichlooretheen', 'trans-1,3-dichloorpropeen', 'tribroommethaan', 'trichlooretheen (tri)', 'trichloormethaan (chloroform)', '1,2-xyleen', '2-chloortolueen',
@@ -251,13 +246,18 @@ def bepaal_stofgroep(stofnaam: str) -> str:
             '3-chloorpropeen', '3-chloortolueen', '3-ethyltolueen', '4-ethyltolueen', '1,1-dichlooretheen', 'cis-1,2-dichlooretheen', 'tetrachloorethaan', '1,2-dimethoxyethaan']
     if any(k in s for k in btex):
         return 'Vluchtige organische stoffen'
-
-    industrie = ['bisfenol-A', 'bisfenol-a', 'pentachloorbenzeen', 'pentachloorfenol', 'som 2,4- en 2,5-dichloorfenol', 'som 4-nonylfenol-isomeren (vertakt)', '2-chloorfenol', '2,3-dichloorfenol', '2,3,4-trichloorfenol', '2,3,4,5-tetrachloorfenol', '2,3,5-trichloorfenol', '2,3,5,6-tetrachloorfenol',
-                 '2,3,6-trichloorfenol', '2,4-dinitrofenol', '2,4,5-trichloorfenol', '2,4,6-trichloorfenol', '2,6-dichloorfenol', '3-chloorfenol', '3,4-dichloorfenol', '3,4,5-trichloorfenol', '3,5-dichloorfenol', '4-chloorfenol', '4-tertiair-octylfenol', '2,3,4,6-tetrachloorfenol',
-                 'di-ethyleentriaminepentaazijnzuur (dtpa)', 'methylmethacrylaat', 'nitrilotriazijnzuur (nta)', 'ethyleendiaminetetraethaanzuur (edta)', 'pyrazol', '1,3,5-triazine-2,4,6-triamine (melamine)', "4,4'-methyleendifenol", "4,4'-sulfonyldifenol", 'cyaanguanidine',
-                 'cyanuurzuur', 'hexamethyleentetramine (urotropine)', 'bis(2-ethylhexyl)ftalaat (dehp)', 'acesulfaam', 'cyclamaat', 'saccharine', 'sucralose']
-    if any(k in s for k in industrie):
-        return 'Industriestoffen & overigen'
+    
+    metalen = ['aluminium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor', 'cadmium', 'calcium', 'cerium', 'cesium', 'chroom', 'cobalt', 'kobalt', 'dysprosium', 'erbium', 'europium', 'kalium', 'koper', 'kwik',
+               'lood', 'gadolinium', 'gallium', 'hafnium', 'magnesium', 'mangaan', 'molybdeen', 'natrium', 'nikkel', 'seleen', 'strontium', 'thallium', "tin", 'titanium', 'uranium', 'vanadium', 'ijzer', 'zilver', 'zink',
+               'holmium', 'indium','lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium','platina', 'praseodymium', 'rubidium', 'samarium','tantalium', 'tellurium','terbium', 'thallium', 'thorium', 'thulium', 'wolfraam',
+               'ytterbium','yttrium', 'zirkonium', 'titaan', 'scandium', 'arsenaat', 'arseniet', 'selenaat', 'seleniet', 'chroom (zeswaardig)']
+    if any(k in s for k in metalen):
+        return 'Metalen & elementen'
+    
+    nutrienten = ['fluoride', 'Biochemisch zuurstofverbruik met allylthioureum', 'chlorofyl-a','siliciumdioxide', 'sulfaat','koolstof organisch','stikstof', 'nitraat', 'nitriet', "ammonium", "fosfor", "fosfaat", "fosfor totaal", "chloride", 'zuurstof', 'silicium', 'zwevende stof', 'hardheid', 'temperatuur',
+                  'zuurgraad', 'geleidbaarheid', 'Gloeirest', 'Onopgeloste stoffen', 'stikstof totaal', 'waterstofcarbonaat', 'zuurstof', 'cyanide', 'gloeirest', 'onopgeloste stoffen', 'totaal organisch koolstof', 'chlorofyl fluorescentie in rel. fluorescentie eenh.(rfu)']
+    if any(k in s for k in nutrienten):
+        return 'Nutriënten & algemeen'
 
     return 'Onbekend'
 
