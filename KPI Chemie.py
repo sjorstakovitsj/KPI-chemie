@@ -11,6 +11,124 @@ DATA_FILE_PATH = 'IJG Chemie.csv'
 NORMEN_FILE_PATH = 'KRW stoffen koppeltabel.csv'
 PFAS_FILE_PATH = 'PFAS PEQ koppeltabel.csv'
 
+# Definieer zoeklijsten eenmalig buiten de functies (Constanten)
+STOFGROEPEN_MAPPING = {
+    'PFAS': [
+        'perfluor', 'genx', 'adona', 'pfhpa', 'fluortelomeer', 'pfas', '9-chloorhexadecaanfluor-3-oxanon-1-sulfonzuur',
+        'trifluor', 'tridecafluor', '10:2', '8:2', '6:2', '4:2', '11-chlooreicosafluor-3-oxaundecaan-1-sulfonzuur',
+        'som hexadecafluor-2-deceenzuur-isomerenâ'
+    ],
+    'Bestrijdingsmiddelen': [
+        'glyfosaat', 'ampa', 'metolachloor', 'imidacloprid', 'mcpa', 'mecoprop', 'terbutylazine',
+        'abamectine', 'aclonifen', 'alachloor', 'aldrin', 'endosulfan', 'hexachloor', 'atrazine',
+        'bentazon', 'bifenox', 'chloorfenvinfos', 'chloortoluron', 'chloridazon', 'heptachloor',
+        'cumafos', 'cypermethrin', 'diazinon', 'dichloorvos', 'dicofol', 'dieldrin', 'dimethenamid',
+        'dimethoaat', 'dinoseb', 'diuron', 'dodine', 'endrin', 'azinfos', 'chloorpyrifos',
+        'fenamifos', 'fenoxycarb', 'irgarol', 'isodrin', 'isoproturon', 'linuron', 'malathion',
+        'methabenzthiazuron', 'metazachloor', 'metsulfuron', 'pirimifos', 'mevinfos', 'monolinuron',
+        'pirimicarb', 'propazine', 'propiconazol', 'pyrazofos', 'pyridaben', 'pyriproxyfen',
+        'quinoxyfen', 'simazine', 'teflubenzuron', 'terbutrin', 'thiacloprid', 'tolclofos',
+        'triazofos', 'fenoxyazijnzuur', 'fenoxyboterzuur', 'fenoxypropionzuur', 'ddt', 'ddd', 'dde',
+        'dinitro-o-cresol', 'aminomethyl', 'amisulpride', 'deltamethrin', 'diflufenican',
+        'esfenvaleraat', 'parathion', 'fenitrothion', 'fenthion', 'fipronil', 'fluconazol',
+        'glufosinaat', 'cyhalothrin', 'trifluraline', 'triazool', '3-(hydroxymethylfosfinoyl)propionzuur',
+        'dinoterb', 'heptenofos', 'metabenzthiazuron', "4,4'-dichloordifenyltrichloorethaan",
+        "2,4'-dichloordifenyltrichloorethaan" 
+        
+    ],
+    'Geneesmiddelen': [
+        'diclofenac', 'carbamazepine', 'metformine', 'tramadol', 'paracetamol', 'gadobutrol',
+        'gadopentetaat', 'gadoteraat', 'gadoteridol', 'ibuprofen', 'amidotrizo', 'amoxicilline',
+        'atenolol', 'azitromycine', 'azoxystrobin', 'bezafibraat', 'ciprofloxacine', 'claritromycine',
+        'clindamycine', 'clofibraat', 'clofibrinezuur', 'clozapine', 'desvenlafaxine', 'dimetridazol',
+        'dipyridamol', 'erytromycine', 'fenazon', 'fenofibraat', 'furosemide', 'gemfibrozil',
+        'hydrochloorthiazide', 'ifosfamide', 'irbesartan', 'johexol', 'jomeprol', 'jopamidol',
+        'jopromide', 'joxitalaminezuur', 'ketoprofen', 'levonorgestrel', 'lidoca', 'lincomycine',
+        'losartan', 'metoprolol', 'miconazol', 'naproxen', 'norethisteron', 'ofloxacine', 'oxazepam',
+        'oxybenzone', 'pentoxifylline', 'pipamperon', 'primidon', 'propranolol', 'sotalol',
+        'sulfadiazine', 'sulfadimidine', 'sulfamethoxazol', 'sulfapyridine', 'sulfaquinoxaline',
+        'tiamuline', 'trimethoprim', 'valsartan', 'venlafaxine', 'chlooramfenicol', 'cyclofosfamide',
+        'guanylureum', 'avobenzone', 'octocrilene', 'paroxetine', 'fluoxetine', 'fenofibrinezuur'
+    ],
+    'PAKs/PCBs/PBDEs': [
+        'naftaleen', 'antraceen', 'fenantreen', 'fluorantheen', 'benzo(a)', 'benzo(g', 'benzo(k',
+        'chryseen', 'pyreen', 'dibenzo', 'indeno', 'benzo(b)', 'pcb', 'broomdiphenylether',
+        'broomdifenylether', 'chloorbifenyl', 'acenaftyleen'
+    ],
+    'Vluchtige organische stoffen': [
+        'benzeen', 'tolueen', 'etylbenzeen', 'xyleen', 'styreen', 'chloorbenzeen', 'chlooretheen',
+        'dichloorethaan', 'dichloorpropeen', 'cumeen', 'cyclohexaan', 'methaan', 'dicyclopentadieen',
+        'ether', 'disulfide', 'hydrine', 'etheen', 'chloortolueen', 'propylbenzeen', 'tetrahydrofuran',
+        '1,2-dimethoxyethaan', '1,1,2,2-tetrachloorethaan', '1,3-dichloorpropaan', '1,2-dichloorpropaan',
+        '3-chloorpropeen', '1,2,3-trichloorpropaan', '1,1,1-trichloorethaan', '1,1,2-trichloorethaan',
+        'tetrachloorethaan'
+    ],
+    'Industrie & overigen': [
+        'bisfenol', 'chloorbenzeen', 'chloorfenol', 'nitrofenol', 'dtpa', 'methacrylaat', 'nta',
+        'edta', 'pyrazol', 'melamine', 'difenol', 'cyaanguanidine', 'cyanuurzuur', 'urotropine',
+        'ftalaat', 'acesulfaam', 'cyclamaat', 'saccharine', 'sucralose', 'fosfaat', 'vinylchloride',
+        '4-tertiair-octylfenol', 'som 4-nonylfenol-isomeren (vertakt)', 'melamine'
+    ],
+    'Nutriënten & algemeen': [
+        'fluoride', 'zuurstof', 'chlorofyl', 'silicium', 'sulfaat', 'koolstof', 'stikstof',
+        'nitraat', 'nitriet', 'ammonium', 'fosfor', 'fosfaat', 'chloride', 'zwevende stof',
+        'hardheid', 'temperatuur', 'zuurgraad', 'geleidbaarheid', 'gloeirest', 'onopgeloste',
+        'doorzicht', 'saliniteit', 'troebelheid', 'cyanide', 'bicarbonaat', 'waterstofcarbonaat',
+        'extinctie'
+    ],
+    'Metalen & elementen': [
+        'aluminium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor', 'cadmium', 'calcium',
+        'cerium', 'cesium', 'chroom', 'cobalt', 'kobalt', 'dysprosium', 'erbium', 'europium',
+        'kalium', 'koper', 'kwik', 'lood', 'gadolinium', 'gallium', 'hafnium', 'magnesium',
+        'mangaan', 'molybdeen', 'natrium', 'nikkel', 'seleen', 'strontium', 'thallium', 'tin',
+        'titanium', 'uranium', 'vanadium', 'ijzer', 'zilver', 'zink', 'holmium', 'indium',
+        'lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium', 'platina', 'praseodymium',
+        'rubidium', 'samarium', 'tantalium', 'tellurium', 'terbium', 'thorium', 'thulium',
+        'wolfraam', 'ytterbium', 'yttrium', 'zirkonium', 'titaan', 'scandium', 'arsenaat',
+        'arseniet', 'selenaat', 'seleniet'
+    ],
+
+}
+
+UITGESLOTEN_ELEMENTEN = [
+    'aluminium', 'ammonium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor',
+    'cadmium', 'cerium', 'cesium', 'chloride', 'chroom', 'calcium', 'cobalt', 'kobalt', 'koper', 'kwik',
+    'lood', 'magnesium', 'mangaan', 'molybdeen', 'natrium', 'nikkel', 'dysprosium', 'erbium', 'europium',
+    'kalium', 'seleen', 'silicium', 'strontium', 'thallium', 'tin', 'gadolinium', 'gallium', 'hafnium',
+    'titanium', 'uranium', 'vanadium', 'ijzer', 'zilver', 'zink', 'holmium', 'indium', 'koolstof organisch',
+    'lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium', 'nitraat', 'nitriet', 'platina', 'praseodymium',
+    'rubidium', 'samarium', 'siliciumdioxide', 'sulfaat', 'tantalium', 'tellurium',
+    'terbium', 'thallium', 'thorium', 'thulium', 'wolfraam', 'ytterbium', 'yttrium', 'zirkonium',
+    'titaan', 'scandium', 'chlorofyl-a'
+]
+
+
+# --- FUNCTIES ---
+
+def match_stofgroep_optimized(unieke_stoffen):
+    """
+    Maakt een dictionary mapping aan voor stofnaam -> stofgroep.
+    Dit is veel sneller dan per rij checken.
+    """
+    mapping = {}
+    # Volgorde in STOFGROEPEN_MAPPING is belangrijk; eerder gematcht = definitief
+    # (Tenzij je specifieke prioriteit wilt, pas dan de volgorde in de dict aan)
+    
+    for stof in unieke_stoffen:
+        s_lower = stof.lower()
+        gevonden = False
+        for groep, keywords in STOFGROEPEN_MAPPING.items():
+            # Gebruik any() in een generator expression (snel)
+            if any(k in s_lower for k in keywords):
+                mapping[stof] = groep
+                gevonden = True
+                break # Stop bij eerste match
+        
+        if not gevonden:
+            mapping[stof] = 'Onbekend'
+            
+    return mapping
+
 
 @st.cache_data
 def load_data(file_path: str) -> pd.DataFrame:
@@ -31,31 +149,97 @@ def load_data(file_path: str) -> pd.DataFrame:
         'hoedanigheid_code': 'hoedanigheid',
         'locatie_lat_etrs89': 'Latitude',
         'locatie_lon_etrs89': 'Longitude',
+        # TOEVOEGEN: Kolommen voor de NVT-transformatie
+        'hoedanigheid_omschrijving': 'Hoedanigheid_Omschr', 
+        'eenheid_omschrijving': 'Eenheid_Omschr',
     })
 
+    # Optimalisatie: Vectorized string operations
     df['hoedanigheid'] = df['hoedanigheid'].astype(str).str.strip().str.lower()
     df['Stof'] = df['Stof'].astype(str).str.strip()
     df['Limietsymbool'] = df['Limietsymbool'].astype(str).replace('nan', '').fillna('')
+    
+    # ----------------------------------------------------------------------------------
+    # --- NIEUWE LOGICA: NVT-STOFFEN DETECTIE (Zoeken op Omschrijving en Waarde) ---
+    # ----------------------------------------------------------------------------------
+    
+    # 1. Standaardiseer de tekstkolommen voor filtering
+    df['Hoedanigheid_Omschr_lower'] = df['Hoedanigheid_Omschr'].astype(str).str.strip().str.lower()
+    df['Eenheid_Omschr_lower'] = df['Eenheid_Omschr'].astype(str).str.strip().str.lower()
+    
+    # 2. Definieer de condities
+    mask_nvt = df['Stof'] == 'NVT' # Basismarkering voor NVT
+    
+    # NIEUWE CONDITIE: mask_gadolinium
+    mask_gadolinium = df['Stof'].str.lower() == 'gadolinium'
+    
+    conditions = [
+        # 1. Hardheid
+        mask_nvt & (df['Hoedanigheid_Omschr_lower'].str.contains('calciumcarbonaat', na=False)), 
+        # 2. Geleidbaarheid
+        mask_nvt & (df['Hoedanigheid_Omschr_lower'].str.contains('t.o.v. 20 graden celsius', na=False)), 
+        # 3. Doorzicht
+        mask_nvt & (df['Eenheid_Omschr_lower'] == 'decimeter'), 
+        # 4. Saliniteit: dimensieloos EN Waarde < 3
+        mask_nvt & (df['Eenheid_Omschr_lower'] == 'dimensieloos') & (df['Waarde'] < 3),
+        # 5. Zuurgraad (pH): dimensieloos EN Waarde > 3
+        mask_nvt & (df['Eenheid_Omschr_lower'] == 'dimensieloos') & (df['Waarde'] > 3),
+        # 6. Troebelheid
+        mask_nvt & (df['Eenheid_Omschr_lower'].str.contains('formazine nephelometric unit', na=False)), 
+        # 7. Temperatuur
+        mask_nvt & (df['Eenheid_Omschr_lower'] == 'graad celsius'),
+        # 8. Extinctie
+        mask_nvt & (df['Eenheid_Omschr_lower'] == 'per meter'),
+        # 9. Gadolinium (Antropogeen)
+        mask_gadolinium & (df['Hoedanigheid_Omschr_lower'].str.contains('antropogeen / opgeloste fractie', na=False)),
+    ]
+    
+    # 3. Corresponderende waarden
+    new_values = [
+        'hardheid',
+        'geleidbaarheid',
+        'doorzicht',
+        'saliniteit',
+        'zuurgraad',
+        'troebelheid',
+        'temperatuur',
+        'extinctie',
+        'gadolinium (antropogeen)'
+    ]
+    
+    # 4. Voer de transformatie uit met np.select (houd de oude 'Stof' als default)
+    df['Stof'] = np.select(conditions, new_values, default=df['Stof'])
+    
+    # 5. Verwijder de tijdelijke en nu onnodige omschrijvingskolommen voor geheugenefficiëntie
+    df = df.drop(columns=[
+        'Hoedanigheid_Omschr', 
+        'Eenheid_Omschr', 
+        'Hoedanigheid_Omschr_lower', 
+        'Eenheid_Omschr_lower'
+    ])
 
-    def specificeer_stofnaam(row):
-        stof = row['Stof']
-        hoedanigheid = row['hoedanigheid']
-        if 'nf' in hoedanigheid or 'filtratie' in hoedanigheid or 'opgeloste' in hoedanigheid:
-            return f"{stof} (opgelost)"
-        elif 'nvt' in hoedanigheid or 'niet van toepassing' in hoedanigheid or hoedanigheid == 'nan':
-             return f"{stof} (totaal)"
-        else:
-            return f"{stof} (totaal)"
-
-    df['Stof'] = df.apply(specificeer_stofnaam, axis=1)
+    # Optimalisatie: Vervang 'specificeer_stofnaam' apply door vectorized numpy/pandas logic
+    cond_opgelost = df['hoedanigheid'].str.contains('nf|filtratie|opgeloste', na=False)
+    # Standaard suffix
+    suffix = " (totaal)"
+    # Update suffix waar nodig
+    df['suffix'] = np.where(cond_opgelost, " (opgelost)", suffix)
+    df['Stof'] = df['Stof'] + df['suffix']
+    df = df.drop(columns=['suffix']) # Opruimen
+    
     df['Stof'] = df['Stof'].str.lower()
     df['Datum'] = pd.to_datetime(df['Datum'], format='%Y-%m-%d', errors='coerce')
     df['Waarde'] = pd.to_numeric(df['Waarde'], errors='coerce')
     df['Latitude'] = pd.to_numeric(df['Latitude'], errors='coerce')
     df['Longitude'] = pd.to_numeric(df['Longitude'], errors='coerce')
 
+    # Filtering
     df = df[df['Waarde'] != 999999999999]
     df = df.dropna(subset=['Waarde', 'Datum', 'Meetpunt', 'Stof']).copy()
+
+    # Optimalisatie: Geheugenbesparing door categories
+    for col in ['Meetpunt', 'Eenheid']:
+        df[col] = df[col].astype('category')
 
     # 2. KRW Normen Inlezen en Koppelen
     try:
@@ -67,28 +251,29 @@ def load_data(file_path: str) -> pd.DataFrame:
         })
 
         df_normen['Stof'] = df_normen['Stof'].astype(str).str.strip()
+        
+        # Vectorized norm matching logic
+        norm_type_str = df_normen['NormType'].astype(str).str.lower()
+        cond_norm_opgelost = norm_type_str.str.contains('opgelost')
+        cond_norm_totaal = norm_type_str.str.contains('totaal')
+        
+        df_normen['suffix'] = ''
+        df_normen.loc[cond_norm_opgelost, 'suffix'] = ' (opgelost)'
+        df_normen.loc[cond_norm_totaal, 'suffix'] = ' (totaal)'
+        # Als er geen match is, blijft suffix leeg (zoals origineel 'return stof')
+        
+        df_normen['Stof'] = (df_normen['Stof'] + df_normen['suffix']).str.lower()
 
-        def match_norm_stofnaam(row):
-            stof = row['Stof']
-            omschrijving = str(row['NormType']).lower()
-            if 'opgelost' in omschrijving:
-                return f"{stof} (opgelost)"
-            elif 'totaal' in omschrijving:
-                return f"{stof} (totaal)"
-            return stof
+        # NormCode logic mapping
+        # JG_MKN
+        cond_jg = norm_type_str.str.contains('jg-mkn|jaargemiddelde')
+        # MAC_MKN
+        cond_mac = norm_type_str.str.contains('mac-mkn|maximaal')
+        
+        df_normen['NormCode'] = None
+        df_normen.loc[cond_jg, 'NormCode'] = 'JG_MKN'
+        df_normen.loc[cond_mac, 'NormCode'] = 'MAC_MKN'
 
-        df_normen['Stof'] = df_normen.apply(match_norm_stofnaam, axis=1)
-        df_normen['Stof'] = df_normen['Stof'].str.lower()
-
-        def map_norm_type(norm_omschrijving):
-            norm_omschrijving = str(norm_omschrijving)
-            if 'JG-MKN' in norm_omschrijving or 'Jaargemiddelde' in norm_omschrijving:
-                return 'JG_MKN'
-            if 'MAC-MKN' in norm_omschrijving or 'Maximaal' in norm_omschrijving:
-                return 'MAC_MKN'
-            return None
-
-        df_normen['NormCode'] = df_normen['NormType'].apply(map_norm_type)
         df_normen_filtered = df_normen.dropna(subset=['NormCode']).copy()
 
         df_normen_filtered['NormWaarde'] = (
@@ -105,42 +290,33 @@ def load_data(file_path: str) -> pd.DataFrame:
             aggfunc='first'
         ).reset_index()
 
-        df_normen_pivot['Stof'] = df_normen_pivot['Stof'].astype(str)
-
         df = pd.merge(
             df,
-            df_normen_pivot[['Stof', 'JG_MKN', 'MAC_MKN']],
+            df_normen_pivot,
             on='Stof',
             how='left'
         )
 
     except FileNotFoundError:
         st.error(f"Koppeltabel KRW-normen niet gevonden op pad: {NORMEN_FILE_PATH}.")
-        df['JG_MKN'] = None
-        df['MAC_MKN'] = None
+        df['JG_MKN'] = np.nan
+        df['MAC_MKN'] = np.nan
 
     # 3. Signaleringswaarden Berekenen
+    # Zorg dat de kolommen bestaan
+    if 'JG_MKN' not in df.columns: df['JG_MKN'] = np.nan
+    
     df['KRW_Norm'] = df['JG_MKN']
-    df['Signaleringswaarde'] = pd.NA
+    df['Signaleringswaarde'] = np.nan
 
-    uitgesloten_elementen = [
-        'aluminium', 'ammonium', 'antimoon', 'arseen', 'arsenaat', 'arseniet', 'barium', 'beryllium', 'boor',
-        'cadmium', 'cerium', 'cesium', 'chloride', 'chroom','calcium', 'cobalt', 'kobalt', 'koper', 'kwik',
-        'lood', 'magnesium', 'mangaan', 'molybdeen', 'natrium', 'nikkel', 'dysprosium', 'erbium', 'europium',
-        'kalium', 'seleen', 'silicium', 'strontium', 'thallium', 'tin', 'gadolinium', 'gallium', 'hafnium',
-        'titanium', 'uranium', 'vanadium', 'ijzer', 'zilver', 'zink', 'holmium', 'indium', 'koolstof organisch',
-        'lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium', 'nitraat', 'nitriet', 'platina', 'praseodymium',
-        'rubidium', 'samarium', 'seleniet', 'selenaat', 'siliciumdioxide', 'sulfaat', 'tantalium', 'tellurium',
-        'terbium', 'thallium', 'thorium', 'thulium', 'wolfraam', 'ytterbium', 'yttrium', 'zirkonium',
-        'titaan', 'scandium', 'chlorofyl-a'
-    ]
-
+    # Bereken masker voor signaleringswaarde
+    # Eerst basis stofnaam isoleren (vectorized)
     base_stofnaam = df['Stof'].str.replace(r' \(totaal\)| \(opgelost\)', '', regex=True).str.strip()
-    is_metaal_of_element = base_stofnaam.isin(uitgesloten_elementen)
+    is_metaal_of_element = base_stofnaam.isin(UITGESLOTEN_ELEMENTEN)
 
     masker = (
         df['JG_MKN'].isna() &
-        (df['Eenheid'].str.lower() == 'ug/l') &
+        (df['Eenheid'].astype(str).str.lower() == 'ug/l') &
         (~is_metaal_of_element)
     )
 
@@ -148,15 +324,19 @@ def load_data(file_path: str) -> pd.DataFrame:
 
     st.session_state.last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Voeg de stofgroep kolom toe
-    df['Stofgroep'] = df['Stof'].apply(bepaal_stofgroep)
+    # --- Optimalisatie Stofgroep Bepaling ---
+    # Haal unieke stoffen op (veel minder dan aantal rijen)
+    unieke_stoffen = df['Stof'].unique()
+    # Maak een map
+    stof_map = match_stofgroep_optimized(unieke_stoffen)
+    # Map terug naar de dataframe
+    df['Stofgroep'] = df['Stof'].map(stof_map).astype('category')
 
     return df
 
 
 @st.cache_data
 def load_pfas_ref(file_path: str) -> pd.DataFrame:
-
     try:
         df_pfas = pd.read_csv(file_path, dtype=str)
         df_pfas.columns = df_pfas.columns.str.strip()
@@ -173,8 +353,11 @@ def load_pfas_ref(file_path: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-
 def create_gauge(percentage: float, title_text: str = "Metingen onder Norm", drempel: int = 95) -> go.Figure:
+    # Veilige afhandeling van NaN of None
+    if pd.isna(percentage):
+        percentage = 0
+        
     bar_color = "green" if percentage >= drempel else "red"
     fig = go.Figure(go.Indicator(
         mode = "gauge+number",
@@ -192,76 +375,6 @@ def create_gauge(percentage: float, title_text: str = "Metingen onder Norm", dre
     return fig
 
 
-def bepaal_stofgroep(stofnaam: str) -> str:
-
-    s = stofnaam.lower().strip()
-
-    pfas = ['perfluor-2-propoxypropaanzuur', 'perfluor-1-octaansulfonaat (lineair)', 'perfluoroctaanzuur', 'perfluorbutaanzuur', 'perfluorpentaansulfonzuur', 'perfluorhexaanzuur', 'pfhpa', 'perfluornonaansulfonzuur', 'perfluordecaanzuur', 'genx', 'perfluor', 'adona', 'N-ethyl-perfluoroctaan sulfonamidoazijnzuur', 'N-methyl-perfluoroctaan sulfonamidoazijnzuur',
-                     'N-methylperfluorbutaansulfonamide', 'perfluor-3-methoxypropaanzuur', 'perfluor-3,6-dioxaheptaanzuur', 'perfluor-4-methoxybutaanzuur', 'perfluor(2-ethoxyethaan)sulfonzuur', 'perfluorbutaansulfonamide', 'perfluorbutaansulfonzuur', 'perfluordecaansulfonzuur', '4,8-dioxa-3H-perfluornonaanzuur', '4:2 fluortelomeersulfonzuur', '6:2 fluortelomeersulfonzuur',
-                     'perfluordodecaanzuur', 'perfluorheptaansulfonzuur', 'perfluorheptaanzuur', 'perfluorhexaansulfonamide', 'perfluorhexaansulfonzuur', 'perfluornonaanzuur', 'perfluoroctaansulfonamide', '8:2 fluortelomeersulfonzuur', '9-chloorhexadecaanfluor-3-oxanon-1-sulfonzuur', 'trifluormethaansulfonzuur',
-                     'perfluorpentaanzuur', 'perfluortetradecaanzuur', 'perfluortridecaanzuur', 'perfluorundecaanzuur', 'Som hexadecafluor-2-deceenzuur-isomerenÂ ', 'som vertakte perfluorhexaansulfonzuur-isomeren', 'n-[3-(dimethylamino)propyl]tridecafluorhexaansulfonamide', "Carboxymethyldimethyl-3-[{(3,3,4,4,5,5,6,6,7,7,8,8,8-tridecafluoroctyl)sulfonyl}amino]propylammonium hydroxide",
-                     'som vertakte perfluoroctaansulfonzuur-isomeren', '10:2 fluortelomeersulfonzuur', '11-chlooreicosafluor-3-oxaundecaan-1-sulfonzuur', 'som hexadecafluor-2-deceenzuur-isomerenâ', 'trifluorazijnzuur', 'tridecafluoroctyl']
-    if any(k in s for k in pfas):
-        return 'PFAS'
-
-    industrie = ['bisfenol-A', 'bisfenol-a', 'pentachloorbenzeen', 'pentachloorfenol', 'som 2,4- en 2,5-dichloorfenol', 'som 4-nonylfenol-isomeren (vertakt)', '2-chloorfenol', '2,3-dichloorfenol', '2,3,4-trichloorfenol', '2,3,4,5-tetrachloorfenol', '2,3,5-trichloorfenol', '2,3,5,6-tetrachloorfenol',
-                 '2,3,6-trichloorfenol', '2,4-dinitrofenol', '2,4,5-trichloorfenol', '2,4,6-trichloorfenol', '2,6-dichloorfenol', '3-chloorfenol', '3,4-dichloorfenol', '3,4,5-trichloorfenol', '3,5-dichloorfenol', '4-chloorfenol', '4-tertiair-octylfenol', '2,3,4,6-tetrachloorfenol',
-                 'di-ethyleentriaminepentaazijnzuur (dtpa)', 'methylmethacrylaat', 'nitrilotriazijnzuur (nta)', 'ethyleendiaminetetraethaanzuur (edta)', 'pyrazol', '1,3,5-triazine-2,4,6-triamine (melamine)', "4,4'-methyleendifenol", "4,4'-sulfonyldifenol", 'cyaanguanidine',
-                 'cyanuurzuur', 'hexamethyleentetramine (urotropine)', 'bis(2-ethylhexyl)ftalaat (dehp)', 'acesulfaam', 'cyclamaat', 'saccharine', 'sucralose', 'tributylfosfaat', 'trifenylfosfaat', 'chlooretheen (vinylchloride)']
-    if any(k in s for k in industrie):
-        return 'Industrie & overigen'
-    
-    pesticiden = ['glyfosaat', 'ampa', 'metolachloor', 'imidacloprid', 'mcpa', 'mecoprop', 'terbutylazine', 'abamectine', 'aclonifen', 'alachloor', 'aldrin', 'endosulfan', 'hexachloorcyclohexaan', 'atrazine', 'bentazon', 'bifenox',
-                  'chloorfenvinfos', 'chloortoluron', 'chloridazon', 'heptachloorepoxide', 'cumafos', 'cypermethrin', 'desethylatrazine', 'diazinon', 'dichloorvos', 'dicofol', 'dieldrin', 'dimethenamid-P', 'dimethoaat', 'dinoseb', 'dinoterb',
-                  'diuron', 'dodine', 'endrin', 'ethylazinfos', 'ethylchloorpyrifos', 'fenamifos', 'fenoxycarb', 'heptachloor', 'heptenofos', 'hexachloorbenzeen', 'hexachloorbutadieen', 'irgarol', 'isodrin', 'isoproturon', 'linuron',
-                  'malathion', 'methabenzthiazuron', 'metazachloor', 'methyl-metsulfuron', 'methylazinfos', 'methylpirimifos', 'metolachloor', 'mevinfos', 'monolinuron', 'pirimicarb', 'propazine', 'propiconazol (som cis- en trans-)',
-                  'pyrazofos', 'pyridaben', 'pyriproxyfen', 'quinoxyfen', 'simazine', 'teflubenzuron', 'terbutrin', 'terbutylazine', 'thiacloprid', 'tolclofos-methyl', 'trans-heptachloorepoxide', 'triazofos', '2-methyl-4-chloorfenoxyazijnzuur',
-                  '2-methyl-4-chloorfenoxyboterzuur', '2,4-dichloorfenoxyazijnzuur', '2,4-dichloorfenoxyboterzuur', '2,4-dichloorfenoxypropionzuur', '2,4,5-trichloorfenoxyazijnzuur', '2,4,5-trichloorfenoxypropionzuur', "2,4'-dichloordifenyltrichloorethaan",
-                  "4,4'-dichloordifenyldichloorethaan", "4,4'-dichloordifenyldichlooretheen", "4,4'-dichloordifenyltrichloorethaan", '4,6-dinitro-o-cresol', 'chloridazon', 'dimethenamid-p', 'metabenzthiazuron', 'aminomethylfosfonzuur', 'amisulpride',
-                  'deltamethrin', 'diflufenican', 'dimethenamide', 'esfenvaleraat', 'ethylparathion', 'fenitrothion', 'fenthion', 'fipronil', 'fluconazol', 'glufosinaat', 'lambda-cyhalothrin', 'methylparathion', 'trifluraline',
-                  '1,2,4-triazool', '3-(hydroxymethylfosfinoyl)propionzuur', 'abamectine']
-    if any(k in s for k in pesticiden):
-        return 'Bestrijdingsmiddelen'
-
-    pharma = ['diclofenac', 'carbamazepine', 'metformine', 'tramadol', 'paracetamol', 'gadobutrol', 'gadopentetaat anion', 'gadoteraat anion', 'gadoteridol', '2-hydroxyibuprofen', 'amidotrizoã¯nezuur', 'amoxicilline', 'atenolol', 'azitromycine', 'azoxystrobin', 'bezafibraat',
-              'ciprofloxacine', 'claritromycine', 'clindamycine', 'clofibraat', 'clofibrinezuur', 'clozapine', 'desvenlafaxine', 'dimetridazol', 'dipyridamol', 'erytromycine', 'fenazon (antipyrine)', 'fenofibraat', 'fenofibrinezuur', 'furosemide', 'gemfibrozil', 'hydrochloorthiazide',
-              'ibuprofen', 'ifosfamide', 'irbesartan', 'johexol', 'jomeprol', 'jopamidol', 'jopromide', 'joxitalaminezuur', 'ketoprofen', 'levonorgestrel', 'lidocaã¯ne', 'lincomycine', 'losartan', 'metoprolol', 'miconazol', 'naproxen', 'norethisteron', 'ofloxacine', 'oxazepam',
-              'oxybenzone', 'pentoxifylline', 'pipamperon', 'primidon', 'propranolol', 'sotalol', 'sulfadiazine', 'sulfadimidine', 'sulfamethoxazol', 'sulfapyridine', 'sulfaquinoxaline', 'tiamuline', 'trimethoprim', 'valsartan', 'venlafaxine', 'chlooramfenicol', 'cyclofosfamide',
-              'guanylureum', 'avobenzone', 'octocrilene', 'paroxetine', 'fluoxetine']
-    if any(k in s for k in pharma):
-        return 'Geneesmiddelen'
-    
-    paks_pcbs_pbdes = ['naftaleen', 'antraceen', 'fenantreen', 'fluorantheen', 'benzo(a)', 'benzo(ghi)', 'benzo(k)', 'chryseen', 'pyreen','dibenzo(a,h)antraceen', 'indeno(1,2,3-cd)pyreen', 'som benzo(b)fluorantheen en benzo(j)fluorantheen','som PCB28 en PCB31',
-                       "2,2',3,3',4,4',5,5',6,6'-decabroomdiphenylether", "2,2',3,4,4'-pentabroomdifenylether", "2,2',3,4,4',5,5'-heptachloorbifenyl", "2,2',3,4,4',5'-hexabroomdifenylether", "2,2',3,4,4',5'-hexachloorbifenyl", "2,2',4,4'-tetrabroomdifenylether",
-                       "2,2',4,4',5-pentabroomdifenylether", "2,2',4,4',5,5'-hexabroomdifenylether", "2,2',4,4',5,5'-hexachloorbifenyl", "2,2',4,4',5,6'-hexabroomdifenylether", "2,2',4,4',6-pentabroomdifenylether", "2,2',4,5,5'-pentachloorbifenyl", "2,2',4,5'-tetrabroomdifenylether",
-                       "2,2',5,5'-tetrachloorbifenyl", "2,3',4,4',5-pentachloorbifenyl", "2,4,4'-tribroomdifenylether", 'som pcb28 en pcb31', 'acenaftyleen']
-    if any(k in s for k in paks_pcbs_pbdes):
-        return 'PAKs/PCBs/PBDEs'
-    
-    btex = ['benzeen', 'tolueen', 'etylbenzeen', 'xyleen', 'styreen', 'chloorbenzeen', 'chlooretheen (vinylchloride)', '1,2-dichloorethaan', '1,3-dichloorpropeen', 'cumeen', 'cyclohexaan', 'dibroomchloormethaan', 'dibroommethaan', 'dichloorbroommethaan', 'dichloormethaan',
-            'dicyclopentadieen', 'diisopropylether', 'dimethoxymethaan', 'dimethyldisulfide', 'epichloorhydrine', 'ethylbenzeen', 'hexachloorethaan', 'methyl-tertiair-butylether', 'som 1,3- en 1,4-xyleen', 'tertiair-butylbenzeen', '2-ethyltolueen',
-            'tetrachlooretheen (per)', 'tetrachloormethaan (tetra)', 'trans-1,2-dichlooretheen', 'trans-1,3-dichloorpropeen', 'tribroommethaan', 'trichlooretheen (tri)', 'trichloormethaan (chloroform)', '1,2-xyleen', '2-chloortolueen',
-            '1-propylbenzeen', '1,1-dichloorethaan', '1,1,1-trichloorethaan', '1,1,2-trichloor-1,2,2-trifluorethaan', '1,1,2-trichloorethaan', '1,1,2,2-tetrachloorethaan', '1,2-dichloorbenzeen', '1,2-dichloorethaan', '1,2-dichloorpropaan', '1,2,3-trichloorbenzeen',
-            '1,2,3-trichloorpropaan', '1,2,3-trimethylbenzeen', '1,2,4-trichloorbenzeen', '1,2,4-trimethylbenzeen', '1,3-dichloorbenzeen', '1,3-dichloorpropaan','1,3,5-trichloorbenzeen', '1,3,5-trimethylbenzeen', '1,4-dichloorbenzeen', '2,2,5,5,-tetramethyl-tetrahydrofuran',
-            '3-chloorpropeen', '3-chloortolueen', '3-ethyltolueen', '4-ethyltolueen', '1,1-dichlooretheen', 'cis-1,2-dichlooretheen', 'tetrachloorethaan', '1,2-dimethoxyethaan']
-    if any(k in s for k in btex):
-        return 'Vluchtige organische stoffen'
-    
-    metalen = ['aluminium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor', 'cadmium', 'calcium', 'cerium', 'cesium', 'chroom', 'cobalt', 'kobalt', 'dysprosium', 'erbium', 'europium', 'kalium', 'koper', 'kwik',
-               'lood', 'gadolinium', 'gallium', 'hafnium', 'magnesium', 'mangaan', 'molybdeen', 'natrium', 'nikkel', 'seleen', 'strontium', 'thallium', "tin", 'titanium', 'uranium', 'vanadium', 'ijzer', 'zilver', 'zink',
-               'holmium', 'indium','lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium','platina', 'praseodymium', 'rubidium', 'samarium','tantalium', 'tellurium','terbium', 'thallium', 'thorium', 'thulium', 'wolfraam',
-               'ytterbium','yttrium', 'zirkonium', 'titaan', 'scandium', 'arsenaat', 'arseniet', 'selenaat', 'seleniet', 'chroom (zeswaardig)']
-    if any(k in s for k in metalen):
-        return 'Metalen & elementen'
-    
-    nutrienten = ['fluoride', 'Biochemisch zuurstofverbruik met allylthioureum', 'chlorofyl-a','siliciumdioxide', 'sulfaat','koolstof organisch','stikstof', 'nitraat', 'nitriet', "ammonium", "fosfor", "fosfaat", "fosfor totaal", "chloride", 'zuurstof', 'silicium', 'zwevende stof', 'hardheid', 'temperatuur',
-                  'zuurgraad', 'geleidbaarheid', 'Gloeirest', 'Onopgeloste stoffen', 'stikstof totaal', 'waterstofcarbonaat', 'zuurstof', 'cyanide', 'gloeirest', 'onopgeloste stoffen', 'totaal organisch koolstof', 'chlorofyl fluorescentie in rel. fluorescentie eenh.(rfu)']
-    if any(k in s for k in nutrienten):
-        return 'Nutriënten & algemeen'
-
-    return 'Onbekend'
-
-
 def main():
 
     st.set_page_config(layout="wide", page_title="Waterkwaliteit KPI Dashboard")
@@ -275,7 +388,7 @@ def main():
     df_main = load_data(DATA_FILE_PATH)
 
     if df_main.empty:
-        st.error("🚨 Kritieke Fout: De geladen en opgeschoonde data is leeg. Controleer de invoer CSV of de opschoningsstappen in de code.")
+        st.error("🚨 Kritieke Fout: De geladen en opgeschoonde data is leeg.")
         st.stop()
         
     st.markdown("---")
@@ -295,14 +408,13 @@ def main():
     if geselecteerde_jaren:
         df_filtered = df_main[df_main['Datum'].dt.year.isin(geselecteerde_jaren)].copy()
     else:
-        # Als niets geselecteerd is, toon alles (of niets, afhankelijk van voorkeur. Hier alles)
         df_filtered = df_main.copy()
     
     st.markdown("---")    
 
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📈 Toestand & Trend",
-        "✅ KRW Normtoetsing",
+        "✅ KRW normcheck",
         "📊 Overzicht Toestand & Kaart",
         "⚠️ Risicoanalyse (Signaleringswaarden)",
         "Effectbeoordeling PFAS",
@@ -311,10 +423,8 @@ def main():
     ])
 
     # --- TAB 1: Toestand & Trend Ontwikkeling ---
-# --- TAB 1: Toestand & Trend Ontwikkeling ---
     with tab1:
         st.header("📈 Toestand en trendontwikkeling")
-        st.markdown("Elke geselecteerde stof wordt in een **aparte subplot** weergegeven om de juiste eenheden en schalen te garanderen. Elk punt is een individuele meting.")
         st.info("Voor enkele stoffen is correctie met achtergrondwaardes van toepassing voor de KRW. In deze tool is dat niet meegenomen.")
 
         st.write("### 🔍 Selectie filters")
@@ -325,13 +435,24 @@ def main():
             horizontal=True
         )
 
+        # Pre-calculatie unieke stoffen op basis van radio button
+        unique_stoffen_series = df_main['Stof'].unique()
+        
         if "KRW-stoffen" in stof_filter_type:
-            beschikbare_stoffen = df_main.dropna(subset=['JG_MKN', 'MAC_MKN'], how='all')['Stof'].unique()
+            # Filter op rows die wel normen hebben
+            # We gebruiken df_main hier om alle mogelijke stoffen te tonen, of df_filtered? Meestal filtered.
+            # Laten we df_main gebruiken voor de optielijst om 'lege' selecties in gefilterde jaren te voorkomen,
+            # of juist df_filtered zodat je alleen kiest wat er is. De originele code gebruikte df_main voor de opties.
+            
+            # Check welke stoffen normen hebben
+            mask_norm = df_main['JG_MKN'].notna() | df_main['MAC_MKN'].notna()
+            beschikbare_stoffen = df_main.loc[mask_norm, 'Stof'].unique()
+            
         elif "Niet-genormeerde stoffen" in stof_filter_type:
-            stoffen_met_norm = df_main.dropna(subset=['JG_MKN', 'MAC_MKN'], how='all')['Stof'].unique()
-            beschikbare_stoffen = df_main[~df_main['Stof'].isin(stoffen_met_norm)]['Stof'].unique()
+            mask_norm = df_main['JG_MKN'].notna() | df_main['MAC_MKN'].notna()
+            beschikbare_stoffen = df_main.loc[~mask_norm, 'Stof'].unique()
         else:
-            beschikbare_stoffen = df_main['Stof'].unique()
+            beschikbare_stoffen = unique_stoffen_series
 
         st.markdown("---")
 
@@ -357,11 +478,14 @@ def main():
             )
 
         with col3:
-            # Filter beschikbare stoffen op basis van geselecteerde stofgroep
+            # Filter beschikbare stoffen op basis van geselecteerde stofgroep en eerdere filter
             if stofgroep_selected:
-                beschikbare_stoffen = sorted(df_filtered[df_filtered['Stof'].isin(beschikbare_stoffen) & df_filtered['Stofgroep'].isin(stofgroep_selected)]['Stof'].unique())
-            else:
-                beschikbare_stoffen = sorted(df_filtered[df_filtered['Stof'].isin(beschikbare_stoffen)]['Stof'].unique())
+                # Eerst filteren op groep
+                stoffen_in_groep = df_filtered[df_filtered['Stofgroep'].isin(stofgroep_selected)]['Stof'].unique()
+                # Intersectie met radio button filter
+                beschikbare_stoffen = np.intersect1d(beschikbare_stoffen, stoffen_in_groep)
+            
+            beschikbare_stoffen = sorted(beschikbare_stoffen)
 
             current_selection = st.session_state.get("tab1_stoffen_select", [])
             valid_default = [s for s in current_selection if s in beschikbare_stoffen]
@@ -383,18 +507,19 @@ def main():
             ].copy()
 
             if not df_trend.empty:
-
-                df_trend['Meting Type'] = df_trend['Limietsymbool'].apply(
-                    lambda x: '< Onder rapportagegrens' if '<' in str(x) else 'Gemeten waarde'
+                df_trend['Meting Type'] = np.where(
+                    df_trend['Limietsymbool'].astype(str).str.contains('<'),
+                    '< Onder rapportagegrens',
+                    'Gemeten waarde'
                 )
+                
                 unique_stoffen = sorted(df_trend['Stof'].unique())
-
-                stof_info = df_trend.groupby('Stof').agg({
-                    'Eenheid': 'first',
-                    'JG_MKN': lambda x: x.dropna().median() if x.dropna().size > 0 else None,
-                    'MAC_MKN': lambda x: x.dropna().median() if x.dropna().size > 0 else None,
-                }).to_dict('index')
-
+                
+                # Optimalisatie: Groupby aggregeren is sneller dan dict comprehension over unique
+                # Maar we hebben JG/MAC MKN nodig per stof. Dat is constant per stof.
+                # We pakken de eerste niet-nan waarde.
+                stof_info_df = df_trend.groupby('Stof', observed=True)[['Eenheid', 'JG_MKN', 'MAC_MKN']].first()
+                
                 fig = px.scatter(
                     df_trend,
                     x='Datum',
@@ -417,23 +542,22 @@ def main():
 
                 for i, stof_naam in enumerate(unique_stoffen):
                     row_index = len(unique_stoffen) - i
-
-                    if stof_naam in stof_info:
-                        info = stof_info[stof_naam]
-                        eenheid = info.get('Eenheid', '')
-
-                        jg_norm = info.get('JG_MKN')
-                        mac_norm = info.get('MAC_MKN')
-
+                    
+                    if stof_naam in stof_info_df.index:
+                        info = stof_info_df.loc[stof_naam]
+                        eenheid = info['Eenheid']
+                        jg_norm = info['JG_MKN']
+                        mac_norm = info['MAC_MKN']
+                        
+                        # Max waarde voor scaling
                         max_waarde_data = df_trend[df_trend['Stof'] == stof_naam]['Waarde'].max()
                         current_max = max_waarde_data if pd.notna(max_waarde_data) else 0
 
                         vergelijkings_waarden = [current_max]
-                        if jg_norm is not None and not pd.isna(jg_norm):
-                            vergelijkings_waarden.append(jg_norm)
-                        if mac_norm is not None and not pd.isna(mac_norm):
-                            vergelijkings_waarden.append(mac_norm)
-                        target_top = max(vergelijkings_waarden) * 1.15
+                        if pd.notna(jg_norm): vergelijkings_waarden.append(jg_norm)
+                        if pd.notna(mac_norm): vergelijkings_waarden.append(mac_norm)
+                        
+                        target_top = max(vergelijkings_waarden) * 1.15 if vergelijkings_waarden else 10
 
                         fig.update_yaxes(
                             title_text=f"Waarde ({eenheid})",
@@ -443,49 +567,30 @@ def main():
                             showticklabels=True
                         )
 
-                        if jg_norm is not None and not pd.isna(jg_norm):
+                        if pd.notna(jg_norm):
                             fig.add_hline(
-                                y=jg_norm,
-                                line_dash="dash",
-                                line_color="darkorange",
-                                line_width=2,
-                                row=row_index,
-                                col=1,
-                                annotation_text=f"JG: {jg_norm:.4f}",
-                                annotation_position="top right",
-                                annotation_font_size=10,
-                                annotation_font_color="darkorange"
+                                y=jg_norm, line_dash="dash", line_color="darkorange", line_width=2,
+                                row=row_index, col=1,
+                                annotation_text=f"JG: {jg_norm:.4f}", annotation_position="top right"
                             )
 
-                        if mac_norm is not None and not pd.isna(mac_norm):
+                        if pd.notna(mac_norm):
                             fig.add_hline(
-                                y=mac_norm,
-                                line_dash="dot",
-                                line_color="red",
-                                line_width=2,
-                                row=row_index,
-                                col=1,
-                                annotation_text=f"MAC: {mac_norm:.2f}",
-                                annotation_position="top left",
-                                annotation_font_size=10,
-                                annotation_font_color="red"
+                                y=mac_norm, line_dash="dot", line_color="red", line_width=2,
+                                row=row_index, col=1,
+                                annotation_text=f"MAC: {mac_norm:.2f}", annotation_position="top left"
                             )
 
-                fig.update_yaxes(showticklabels=True)
-                fig.update_layout(title_x=0.5)
                 fig.update_layout(margin=dict(l=80, r=80))
-
                 st.plotly_chart(fig, use_container_width=True)
             else:
                  st.info("Geen data gevonden voor de geselecteerde combinatie.")
         else:
             st.info("Selecteer minstens één meetpunt en één stof om de trend te zien.")
 
-# --- TAB 2: Normtoetsing met KRW (JG-MKN en MAC-MKN) ---
+    # --- TAB 2: Normtoetsing met KRW (JG-MKN en MAC-MKN) ---
     with tab2:
-        st.header("✅ KRW Normtoetsing per Meetpunt")
-        st.markdown("Analyseer het percentage metingen boven de Kader Richtlijn Water normen (JG-MKN en MAC-MKN) per meetpunt.")
-        st.info("Voor enkele stoffen is correctie met achtergrondwaardes van toepassing voor de KRW. In deze tool is dat niet meegenomen.")
+        st.header("✅ KRW normcheck per meetpunt")
         
         col_filter_1, col_filter_2, col_filter_3 = st.columns(3)
 
@@ -493,7 +598,7 @@ def main():
             all_meetpunten_norm = sorted(df_main['Meetpunt'].unique())
             default_meetpunten_norm = all_meetpunten_norm[:3] if all_meetpunten_norm else []
             selected_meetpunten_norm = st.multiselect(
-                "📍 Selecteer Meetpunt(en)",
+                "📍 Selecteer meetpunt(en)",
                 options=all_meetpunten_norm,
                 default=default_meetpunten_norm,
                 key="tab2_meetpunten_select"
@@ -515,12 +620,11 @@ def main():
             else:
                 all_stoffen_norm = sorted(df_filtered['Stof'].unique())
 
-            # 2. Bepaal slimme defaults (stoffen die daadwerkelijk een norm hebben én in de selectie zitten)
+            # Slimme defaults: stoffen met norm
             stoffen_met_norm = df_filtered.dropna(subset=['JG_MKN', 'MAC_MKN'])['Stof'].unique()
-            mogelijke_defaults = [s for s in stoffen_met_norm if s in all_stoffen_norm]
+            mogelijke_defaults = np.intersect1d(stoffen_met_norm, all_stoffen_norm)
             
-            # Selecteer de eerste 3 beschikbare stoffen die een norm hebben
-            default_stoffen_norm = sorted(mogelijke_defaults)[:3] if mogelijke_defaults else []
+            default_stoffen_norm = sorted(mogelijke_defaults)[:3] if len(mogelijke_defaults) > 0 else []
 
             selected_stoffen_norm = st.multiselect(
                 "🔎 Selecteer stof(fen)",
@@ -530,337 +634,233 @@ def main():
             )
 
         if not selected_stoffen_norm or not selected_meetpunten_norm:
-            st.warning("Selecteer minstens één stof en één meetpunt om de normtoetsing te zien.")
+            st.warning("Selecteer minstens één stof en één meetpunt.")
         else:
             # JG-MKN Toetsing
             st.subheader("Jaargemiddelde toetsing (JG-MKN)")
-            st.info("De JG-MKN toetsing berekent het jaargemiddelde per jaar, per meetpunt, en vergelijkt dit met de norm. De staafdiagram toont het percentage jaren waarin het jaargemiddelde de norm overschrijdt. **NB.** dit is geen officiële normtoetsing.")
-
-            df_jg = df_filtered.dropna(subset=['JG_MKN']).copy()
-            df_jg = df_jg[
-                (df_jg['Stof'].isin(selected_stoffen_norm)) &
-                (df_jg['Meetpunt'].isin(selected_meetpunten_norm))
-            ]
+            
+            # Filter eerst, daarna berekenen
+            df_jg = df_filtered[
+                (df_filtered['Stof'].isin(selected_stoffen_norm)) &
+                (df_filtered['Meetpunt'].isin(selected_meetpunten_norm)) &
+                (df_filtered['JG_MKN'].notna())
+            ].copy()
 
             if not df_jg.empty:
                 df_jg['Jaar'] = df_jg['Datum'].dt.year
-                df_gemiddelde = df_jg.groupby(['Jaar', 'Meetpunt', 'Stof'])['Waarde'].mean().reset_index()
-
-                df_gemiddelde = pd.merge(
-                    df_gemiddelde,
-                    df_jg[['Stof', 'JG_MKN']].drop_duplicates(),
-                    on='Stof',
-                    how='left'
-                )
+                
+                # Bereken jaargemiddelde
+                # observed=True is belangrijk bij categorical data voor performance
+                df_gemiddelde = df_jg.groupby(['Jaar', 'Meetpunt', 'Stof'], observed=True)['Waarde'].mean().reset_index()
+                
+                # Voeg norm toe (is constant per stof)
+                norm_lookup = df_jg[['Stof', 'JG_MKN']].drop_duplicates()
+                df_gemiddelde = pd.merge(df_gemiddelde, norm_lookup, on='Stof', how='left')
 
                 df_gemiddelde['Overschrijding'] = df_gemiddelde['Waarde'] > df_gemiddelde['JG_MKN']
 
-                jg_overschrijding_pct = df_gemiddelde.groupby(['Meetpunt', 'Stof'])['Overschrijding'].mean().reset_index()
+                jg_overschrijding_pct = df_gemiddelde.groupby(['Meetpunt', 'Stof'], observed=True)['Overschrijding'].mean().reset_index()
                 jg_overschrijding_pct['Overschrijding (%)'] = (jg_overschrijding_pct['Overschrijding'] * 100).round(2)
 
-                jg_overschrijding_pct['PlotLabel'] = jg_overschrijding_pct['Meetpunt'] + ' (' + jg_overschrijding_pct['Stof'] + ')'
+                # Convert categories to str for plotting labels
+                jg_overschrijding_pct['PlotLabel'] = jg_overschrijding_pct['Meetpunt'].astype(str) + ' (' + jg_overschrijding_pct['Stof'].astype(str) + ')'
 
                 fig_jg = px.bar(
                     jg_overschrijding_pct.sort_values(['Stof', 'Meetpunt']),
                     x='PlotLabel',
                     y='Overschrijding (%)',
-                    title='Percentage boven JG-MKN norm per meetpunt',
+                    title='Percentage jaren boven JG-MKN norm',
                     color='Meetpunt',
-                    labels={'PlotLabel': 'Meetpunt (Stof)'},
                     color_continuous_scale=px.colors.sequential.Reds
                 )
                 st.plotly_chart(fig_jg, use_container_width=True)
             else:
-                st.warning("Geen JG-MKN normen gedefinieerd of data gevonden voor de geselecteerde stof(fen)/meetpunt(en).")
+                st.info("Geen JG-MKN data voor selectie.")
 
             st.markdown("---")
 
             # MAC-MKN Toetsing
-            st.subheader("Maximale aanvaardbare concentratie toetsing (MAC-MKN)")
-            st.info("De MAC-MKN toetsing telt het percentage individuele metingen per meetpunt dat de norm overschrijdt. **NB.** dit is geen officiële normtoetsing.")
-
-            df_mac = df_filtered.dropna(subset=['MAC_MKN']).copy()
-            df_mac = df_mac[
-                (df_mac['Stof'].isin(selected_stoffen_norm)) &
-                (df_mac['Meetpunt'].isin(selected_meetpunten_norm))
-            ]
+            st.subheader("Maximale aanvaardbare concentratie (MAC-MKN)")
+            
+            df_mac = df_filtered[
+                (df_filtered['Stof'].isin(selected_stoffen_norm)) &
+                (df_filtered['Meetpunt'].isin(selected_meetpunten_norm)) &
+                (df_filtered['MAC_MKN'].notna())
+            ].copy()
 
             if not df_mac.empty:
                 df_mac['Overschrijding'] = df_mac['Waarde'] > df_mac['MAC_MKN']
 
-                mac_overschrijding_pct = df_mac.groupby(['Meetpunt', 'Stof'])['Overschrijding'].mean().reset_index()
+                mac_overschrijding_pct = df_mac.groupby(['Meetpunt', 'Stof'], observed=True)['Overschrijding'].mean().reset_index()
                 mac_overschrijding_pct['Overschrijding (%)'] = (mac_overschrijding_pct['Overschrijding'] * 100).round(2)
 
-                mac_overschrijding_pct['PlotLabel'] = mac_overschrijding_pct['Meetpunt'] + ' (' + mac_overschrijding_pct['Stof'] + ')'
+                mac_overschrijding_pct['PlotLabel'] = mac_overschrijding_pct['Meetpunt'].astype(str) + ' (' + mac_overschrijding_pct['Stof'].astype(str) + ')'
 
                 fig_mac = px.bar(
                     mac_overschrijding_pct.sort_values(['Stof', 'Meetpunt']),
                     x='PlotLabel', y='Overschrijding (%)',
-                    title='Percentage individuele metingen boven MAC-MKN norm per meetpunt',
+                    title='Percentage metingen boven MAC-MKN',
                     color='Meetpunt',
-                    labels={'PlotLabel': 'Meetpunt (Stof)'},
                     color_continuous_scale=px.colors.sequential.Reds
                 )
                 st.plotly_chart(fig_mac, use_container_width=True)
             else:
-                st.warning("Geen MAC-MKN normen gedefinieerd of data gevonden voor de geselecteerde stof(fen)/meetpunt(en).")
+                st.info("Geen MAC-MKN data voor selectie.")
 
-# --- TAB 3: In één Oogopslag Toestand & Kaart ---
+    # --- TAB 3: In één Oogopslag Toestand & Kaart ---
     with tab3:
         st.header("📊 Normoverschrijdingen KPI")
-        st.info("Voor enkele stoffen is correctie met achtergrondwaardes van toepassing voor de KRW. In deze tool is dat niet meegenomen.")
-
-        st.subheader("Totaalbeeld (alle meetpunten)")
+        
+        # Berekeningen over totale gefilterde set
         col_kpi_info, col_kpi_gauges, col_map = st.columns([1, 2, 2])
 
-        df_jg_overall = df_filtered.dropna(subset=['JG_MKN']).copy()
+        # JG Overall
+        df_jg_overall = df_filtered.dropna(subset=['JG_MKN'])
         pct_jg_total = 0
         if not df_jg_overall.empty:
-            aantal_jg_totaal = len(df_jg_overall)
-            aantal_jg_voldoet = len(df_jg_overall[df_jg_overall['Waarde'] <= df_jg_overall['JG_MKN']])
-            pct_jg_total = round((aantal_jg_voldoet / aantal_jg_totaal * 100), 1) if aantal_jg_totaal > 0 else 0
+            voldoet = (df_jg_overall['Waarde'] <= df_jg_overall['JG_MKN']).sum()
+            totaal = len(df_jg_overall)
+            pct_jg_total = round((voldoet / totaal * 100), 1)
 
-        df_mac_overall = df_filtered.dropna(subset=['MAC_MKN']).copy()
+        # MAC Overall
+        df_mac_overall = df_filtered.dropna(subset=['MAC_MKN'])
         pct_mac_total = 0
         if not df_mac_overall.empty:
-            aantal_mac_totaal = len(df_mac_overall)
-            aantal_mac_voldoet = len(df_mac_overall[df_mac_overall['Waarde'] <= df_mac_overall['MAC_MKN']])
-            pct_mac_total = round((aantal_mac_voldoet / aantal_mac_totaal * 100), 1) if aantal_mac_totaal > 0 else 0
+            voldoet = (df_mac_overall['Waarde'] <= df_mac_overall['MAC_MKN']).sum()
+            totaal = len(df_mac_overall)
+            pct_mac_total = round((voldoet / totaal * 100), 1)
 
         with col_kpi_info:
-            st.markdown("### ℹ️ Info")
             st.metric(label="Unieke meetpunten", value=df_main['Meetpunt'].nunique())
-            st.markdown("---")
             st.metric(label="Metingen met JG-norm", value=len(df_jg_overall))
             st.metric(label="Metingen met MAC-norm", value=len(df_mac_overall))
 
         with col_kpi_gauges:
-            sub_col1, sub_col2 = st.columns(2)
-            with sub_col1:
-                st.plotly_chart(create_gauge(pct_jg_total, "Totaal: voldoet JG (%)"), use_container_width=True)
-            with sub_col2:
-                st.plotly_chart(create_gauge(pct_mac_total, "Totaal: voldoet MAC (%)"), use_container_width=True)
+            sub1, sub2 = st.columns(2)
+            sub1.plotly_chart(create_gauge(pct_jg_total, "Totaal: voldoet JG (%)"), use_container_width=True)
+            sub2.plotly_chart(create_gauge(pct_mac_total, "Totaal: voldoet MAC (%)"), use_container_width=True)
 
         with col_map:
-            st.markdown("### 📍 Meetpunten Kaart")
-            df_map = df_filtered[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates()
-
-            if not df_map[['Latitude', 'Longitude']].isnull().all().all():
-                df_map = df_map.rename(columns={'Latitude': 'lat', 'Longitude': 'lon'}).dropna(subset=['lat', 'lon']).copy()
-
-                df_map['Grootte'] = 20
-
-                center_lat = df_map['lat'].mean()
-                center_lon = df_map['lon'].mean()
-
+            df_map = df_filtered[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().dropna()
+            if not df_map.empty:
+                center_lat = df_map['Latitude'].mean()
+                center_lon = df_map['Longitude'].mean()
+                
                 fig_map = px.scatter_mapbox(
-                    df_map,
-                    lat='lat',
-                    lon='lon',
-                    hover_name='Meetpunt',
-                    size='Grootte',
-                    size_max=20,
-                    zoom=8,
-                    color_discrete_sequence=['red'],
-                    mapbox_style="open-street-map"
+                    df_map, lat='Latitude', lon='Longitude', hover_name='Meetpunt',
+                    size_max=15, zoom=8, mapbox_style="open-street-map"
                 )
-
-                fig_map.update_layout(
-                    margin={"r":0,"t":0,"l":0,"b":0},
-                    mapbox_center={"lat": center_lat, "lon": center_lon}
-                )
-
+                fig_map.update_traces(marker=dict(size=12, color='red'))
+                fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, mapbox_center={"lat": center_lat, "lon": center_lon})
                 st.plotly_chart(fig_map, use_container_width=True)
-            else:
-                st.info("Geen geldige coördinaten gevonden in de data om de kaart te tonen.")
 
         st.divider()
 
-        st.subheader("📍 KPI per specifiek meetpunt")
-
+        # KPI per specifiek meetpunt (Expanders zijn zwaar als het er veel zijn, beperk evt)
         unieke_meetpunten = sorted(df_filtered['Meetpunt'].unique())
+        
+        # We berekenen alles vooraf in één keer i.p.v. per loop
+        # JG Stats per punt
+        jg_stats = df_jg_overall.groupby('Meetpunt', observed=True).apply(
+            lambda x: (x['Waarde'] <= x['JG_MKN']).mean() * 100
+        )
+        # MAC Stats per punt
+        mac_stats = df_mac_overall.groupby('Meetpunt', observed=True).apply(
+            lambda x: (x['Waarde'] <= x['MAC_MKN']).mean() * 100
+        )
 
         with st.expander(f"Toon detailmeters voor alle {len(unieke_meetpunten)} meetpunten", expanded=True):
-
             for meetpunt in unieke_meetpunten:
-                st.markdown(f"**Meetpunt: {meetpunt}**")
+                pct_jg_mp = jg_stats.get(meetpunt, None)
+                pct_mac_mp = mac_stats.get(meetpunt, None)
+                
+                # Check of er data is voor dit punt in de gefilterde set (soms is punt er wel, maar geen normdata)
+                # Als beide None zijn, skip visueel of toon NVT
+                if pd.isna(pct_jg_mp) and pd.isna(pct_mac_mp):
+                     continue
 
-                df_mp = df_filtered[df_filtered['Meetpunt'] == meetpunt].copy()
-
-                # JG voor dit punt
-                df_jg_mp = df_mp.dropna(subset=['JG_MKN'])
-                pct_jg_mp = None
-
-                if not df_jg_mp.empty:
-                    aantal_jg = len(df_jg_mp)
-                    voldoet_jg = len(df_jg_mp[df_jg_mp['Waarde'] <= df_jg_mp['JG_MKN']])
-                    pct_jg_mp = round((voldoet_jg / aantal_jg * 100), 1)
-
-                # MAC voor dit punt
-                df_mac_mp = df_mp.dropna(subset=['MAC_MKN'])
-                pct_mac_mp = None
-
-                if not df_mac_mp.empty:
-                    aantal_mac = len(df_mac_mp)
-                    voldoet_mac = len(df_mac_mp[df_mac_mp['Waarde'] <= df_mac_mp['MAC_MKN']])
-                    pct_mac_mp = round((voldoet_mac / aantal_mac * 100), 1)
-
-                jg_display = f"{pct_jg_mp}%" if pct_jg_mp is not None else "N.V.T."
-                mac_display = f"{pct_mac_mp}%" if pct_mac_mp is not None else "N.V.T."
-
-                st.markdown(f"### 📍 **{meetpunt}** | Voldoet JG: **{jg_display}** | Voldoet MAC: **{mac_display}**")
-
-                col_mp_1, col_mp_2 = st.columns(2)
-
-                with col_mp_1:
-                    if pct_jg_mp is not None:
-                        st.plotly_chart(create_gauge(pct_jg_mp, f"JG-MKN: {meetpunt}"), use_container_width=True, key=f"gauge_jg_{meetpunt}")
-                    else:
-                        st.info(f"Geen JG-normen of data voor {meetpunt}")
-
-                with col_mp_2:
-                    if pct_mac_mp is not None:
-                        st.plotly_chart(create_gauge(pct_mac_mp, f"MAC-MKN: {meetpunt}"), use_container_width=True, key=f"gauge_mac_{meetpunt}")
-                    else:
-                        st.info(f"Geen MAC-normen of data voor {meetpunt}")
-               
-                # We gebruiken de data van dit specifieke meetpunt (df_mp)
-                df_mp['Overschrijding_JG'] = df_mp.apply(
-                    lambda row: row['Waarde'] > row['JG_MKN'] if pd.notna(row['JG_MKN']) else False, axis=1
-                )
-                df_mp['Overschrijding_MAC'] = df_mp.apply(
-                    lambda row: row['Waarde'] > row['MAC_MKN'] if pd.notna(row['MAC_MKN']) else False, axis=1
-                )
-
-                df_violations_mp = df_mp[
-                    (df_mp['Overschrijding_JG']) | (df_mp['Overschrijding_MAC'])
-                ].sort_values('Datum', ascending=False)
-
-                if not df_violations_mp.empty:
-                    def type_overschrijding_mp(row):
-                        types = []
-                        if row['Overschrijding_JG']: types.append("JG")
-                        if row['Overschrijding_MAC']: types.append("MAC")
-                        return "+".join(types)
-
-                    df_violations_mp['Type'] = df_violations_mp.apply(type_overschrijding_mp, axis=1)
-
-                    st.markdown(f"🔴 **Overschrijdingen geconstateerd op {meetpunt}:**")
-                    st.dataframe(
-                        df_violations_mp[['Datum', 'Stof', 'Waarde', 'Eenheid', 'JG_MKN', 'MAC_MKN', 'Type']],
-                        use_container_width=True
-                    )
+                st.markdown(f"**{meetpunt}**")
+                c1, c2 = st.columns(2)
+                
+                if pd.notna(pct_jg_mp):
+                    c1.plotly_chart(create_gauge(pct_jg_mp, f"JG: {meetpunt}", 95), use_container_width=True, key=f"g_jg_{meetpunt}")
                 else:
-                    st.success(f"🟢 Geen normoverschrijdingen op {meetpunt} binnen de geselecteerde periode.")
-
+                    c1.info("Geen JG data")
+                    
+                if pd.notna(pct_mac_mp):
+                    c2.plotly_chart(create_gauge(pct_mac_mp, f"MAC: {meetpunt}", 95), use_container_width=True, key=f"g_mac_{meetpunt}")
+                else:
+                    c2.info("Geen MAC data")
+                
                 st.markdown("---")
 
-        st.subheader("⚠️ Meest recente overschrijdingen (Alle locaties)")
-
-        df_overschrijdingen = df_filtered.copy()
-
-        df_overschrijdingen['Overschrijding_JG'] = df_overschrijdingen.apply(
-            lambda row: row['Waarde'] > row['JG_MKN'] if pd.notna(row['JG_MKN']) else False, axis=1
-        )
-        df_overschrijdingen['Overschrijding_MAC'] = df_overschrijdingen.apply(
-            lambda row: row['Waarde'] > row['MAC_MKN'] if pd.notna(row['MAC_MKN']) else False, axis=1
-        )
-
-        df_violations = df_overschrijdingen[
-            (df_overschrijdingen['Overschrijding_JG']) | (df_overschrijdingen['Overschrijding_MAC'])
-        ].sort_values('Datum', ascending=False)
-
+        st.subheader("⚠️ Meest recente overschrijdingen")
+        
+        # Vectorized check
+        mask_jg_over = (df_filtered['Waarde'] > df_filtered['JG_MKN'])
+        mask_mac_over = (df_filtered['Waarde'] > df_filtered['MAC_MKN'])
+        
+        df_violations = df_filtered[mask_jg_over | mask_mac_over].copy()
+        
         if not df_violations.empty:
-            def type_overschrijding(row):
-                types = []
-                if row['Overschrijding_JG']: types.append("JG")
-                if row['Overschrijding_MAC']: types.append("MAC")
-                return "+".join(types)
-
-            df_violations['Type'] = df_violations.apply(type_overschrijding, axis=1)
-
+            df_violations['Type'] = np.where(
+                (df_violations['Waarde'] > df_violations['JG_MKN']) & (df_violations['Waarde'] > df_violations['MAC_MKN']), "JG+MAC",
+                np.where(df_violations['Waarde'] > df_violations['JG_MKN'], "JG", "MAC")
+            )
+            
             st.dataframe(
-                df_violations[['Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'JG_MKN', 'MAC_MKN', 'Type']].head(15),
+                df_violations[['Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'JG_MKN', 'MAC_MKN', 'Type']]
+                .sort_values('Datum', ascending=False).head(15),
                 use_container_width=True
             )
         else:
-            st.success("Geen overschrijdingen gevonden in de huidige dataset!")
+            st.success("Geen overschrijdingen gevonden.")
 
-# --- TAB 4: Risicoanalyse Stoffen zonder Normen ---
+# --- TAB 4: Risicoanalyse (Signaleringswaarden) ---
     with tab4:
-        st.header("⚠️ Risicoanalyse o.b.v. signaleringswaarden")
+        st.header("⚠️ Risicoanalyse (Signaleringswaarden)")
         st.markdown("Deze analyse toont stoffen waarvan **normen** bekend zijn. Deze stoffen wordt getoetst aan een generieke signaleringswaarde van **0.1 ug/l**.")
-        st.info("Er wordt enkel gekeken naar **aangetroffen waarden** (boven de rapportagegrens). De risicoscore is het percentage metingen dat boven de 0.1 ug/l uitkomt.")
-
-        # 1. Basis data voorbereiden (alleen stoffen met signaleringswaarde & boven rapportagegrens)
+        
+        # 1. Basis data voorbereiden
         df_risico_basis = df_filtered.dropna(subset=['Signaleringswaarde']).copy()
-        df_risico_basis = df_risico_basis[~df_risico_basis['Limietsymbool'].astype(str).str.contains('<', na=False)]
-
+        # Filter < rapportagegrens weg (Vectorized is sneller)
+        mask_detectie_risico = ~df_risico_basis['Limietsymbool'].astype(str).str.contains('<', na=False)
+        df_risico_basis = df_risico_basis[mask_detectie_risico]
 
         col_risico_1, col_risico_2, col_risico_3 = st.columns(3)
-
-        # 1. Meetpunt Selectie
-        with col_risico_1:
-            meetpunt_opties = sorted(df_risico_basis['Meetpunt'].unique())
-            # Default: Alles selecteren (of niets = alles), hier kiezen we voor 'Alles' als default voor het totaalplaatje
-            selected_meetpunten_risico = st.multiselect(
-                "📍 Selecteer Meetpunt(en)",
-                options=meetpunt_opties,
-                default=meetpunt_opties, # Standaard alles voor goed overzicht
-                key="tab4_meetpunt_select"
-            )
-
-        # 2. Stofgroep Selectie
-        with col_risico_2:
-            stofgroep_opties = sorted(df_risico_basis['Stofgroep'].unique())
-            selected_stofgroep_risico = st.multiselect(
-                "📂 Selecteer Stofgroep",
-                options=stofgroep_opties,
-                default=stofgroep_opties, # Standaard alles
-                key="tab4_stofgroep_select"
-            )
-
-        # 3. Stof Selectie (Afhankelijk van Stofgroep)
-        with col_risico_3:
-            # Filter de beschikbare stoffen op basis van stofgroep
-            if selected_stofgroep_risico:
-                temp_df = df_risico_basis[df_risico_basis['Stofgroep'].isin(selected_stofgroep_risico)]
-                stof_opties = sorted(temp_df['Stof'].unique())
-            else:
-                stof_opties = sorted(df_risico_basis['Stof'].unique())
-
-            selected_stoffen_risico = st.multiselect(
-                "🔎 Selecteer Stof(fen)",
-                options=stof_opties,
-                default=stof_opties, # Standaard alles binnen de gefilterde groepen
-                key="tab4_stof_select"
-            )
-       
-        # We beginnen met de basis set en passen filters toe als er iets geselecteerd is
-        df_risico = df_risico_basis.copy()
-
-        if selected_meetpunten_risico:
-            df_risico = df_risico[df_risico['Meetpunt'].isin(selected_meetpunten_risico)]
         
-        if selected_stofgroep_risico:
-            df_risico = df_risico[df_risico['Stofgroep'].isin(selected_stofgroep_risico)]
-            
-        if selected_stoffen_risico:
-            df_risico = df_risico[df_risico['Stof'].isin(selected_stoffen_risico)]
+        # Filters
+        opts_mp = sorted(df_risico_basis['Meetpunt'].unique())
+        sel_mp = col_risico_1.multiselect("📍 Selecteer Meetpunt(en)", opts_mp, default=opts_mp, key="tab4_meetpunt")
+        
+        opts_grp = sorted(df_risico_basis['Stofgroep'].unique())
+        sel_grp = col_risico_2.multiselect("📂 Selecteer Stofgroep", opts_grp, default=opts_grp, key="tab4_stofgroep")
+        
+        # Filter tussentijds om stof-opties te beperken
+        df_risico = df_risico_basis[
+            df_risico_basis['Meetpunt'].isin(sel_mp) & 
+            df_risico_basis['Stofgroep'].isin(sel_grp)
+        ].copy()
+        
+        opts_stof = sorted(df_risico['Stof'].unique())
+        sel_stof = col_risico_3.multiselect("🔎 Selecteer Stof(fen)", opts_stof, default=opts_stof, key="tab4_stof")
+        
+        # Laatste filter
+        df_risico = df_risico[df_risico['Stof'].isin(sel_stof)]
 
         st.markdown("---")
 
         if not df_risico.empty:
-
+            # Vectorized berekening van overschrijding
             df_risico['Boven_Signalering'] = df_risico['Waarde'] > df_risico['Signaleringswaarde']
 
-            risico_summary = df_risico.groupby('Stof').agg(
+            # Aggregeren (observed=True is cruciaal voor snelheid bij categorical data)
+            risico_summary = df_risico.groupby('Stof', observed=True).agg(
                 Aantal_Metingen=('Waarde', 'count'),
                 Aantal_Boven_Signalering=('Boven_Signalering', 'sum')
             ).reset_index()
 
             risico_summary['Risico_Score'] = (risico_summary['Aantal_Boven_Signalering'] / risico_summary['Aantal_Metingen'] * 100).round(2)
-
             risico_summary_filtered = risico_summary[risico_summary['Aantal_Boven_Signalering'] > 0].copy()
 
             if not risico_summary_filtered.empty:
@@ -881,7 +881,7 @@ def main():
             st.subheader("Trends in overschrijdingen per jaar")
             st.info("Meetpunten waar sprake is van signaleringswaardeoverschrijdingen worden hieronder weergegeven.")
             
-            # Zorg dat er een jaarkolom is
+            # Zorg dat er een jaarkolom is (Vectorized via .dt accessor is snel)
             df_risico['Jaar'] = df_risico['Datum'].dt.year
             
             # Filter alleen de regels die daadwerkelijk een overschrijding zijn
@@ -889,9 +889,10 @@ def main():
 
             if not df_trends.empty:
                 # Stap 1: Tel overschrijdingen per Jaar én per Meetpunt
-                counts_per_mp = df_trends.groupby(['Jaar', 'Meetpunt']).size().reset_index(name='Aantal_Overschrijdingen')
+                # observed=True toegevoegd voor optimalisatie
+                counts_per_mp = df_trends.groupby(['Jaar', 'Meetpunt'], observed=True).size().reset_index(name='Aantal_Overschrijdingen')
                 
-                # Stap 2: Bereken het gemiddelde aantal overschrijdingen per jaar (over de locaties die overschrijdingen hadden)
+                # Stap 2: Bereken het gemiddelde aantal overschrijdingen per jaar
                 avg_per_year = counts_per_mp.groupby('Jaar')['Aantal_Overschrijdingen'].mean().reset_index(name='Gemiddeld_Aantal')
 
                 col_trend_1, col_trend_2 = st.columns(2)
@@ -899,10 +900,7 @@ def main():
                 with col_trend_1:
                     st.markdown("**Gemiddelde van alle meetpunten**")
                     fig_avg = px.line(
-                        avg_per_year, 
-                        x='Jaar', 
-                        y='Gemiddeld_Aantal', 
-                        markers=True,
+                        avg_per_year, x='Jaar', y='Gemiddeld_Aantal', markers=True,
                         title="Gemiddeld aantal overschrijdingen (van locaties met overschrijding)",
                         labels={'Gemiddeld_Aantal': 'Gemiddeld aantal', 'Jaar': 'Jaar'}
                     )
@@ -912,11 +910,7 @@ def main():
                 with col_trend_2:
                     st.markdown("**Per individueel meetpunt**")
                     fig_indiv = px.line(
-                        counts_per_mp, 
-                        x='Jaar', 
-                        y='Aantal_Overschrijdingen', 
-                        color='Meetpunt', 
-                        markers=True,
+                        counts_per_mp, x='Jaar', y='Aantal_Overschrijdingen', color='Meetpunt', markers=True,
                         title="Totaal aantal overschrijdingen per meetpunt",
                         labels={'Aantal_Overschrijdingen': 'Aantal overschrijdingen', 'Jaar': 'Jaar'}
                     )
@@ -924,39 +918,39 @@ def main():
                     st.plotly_chart(fig_indiv, use_container_width=True)
             else:
                 st.info("Onvoldoende data om een trendgrafiek van overschrijdingen te maken.")
-           
+            
             # SPIDER CHARTS    
             st.markdown("---")
             st.subheader("🕸️ Seizoenspatroon: signaleringswaardeoverschrijdingen per maand en jaar")
             st.info("Deze grafiek toont in welke maanden de meeste overschrijdingen plaatsvinden. Elke lijn vertegenwoordigt een jaar.")
 
             if not df_trends.empty:
-                # 1. Maak de locatiefilter
+                # 1. Maak de locatiefilter (gebruik sorted unique voor snelheid)
                 alle_meetpunten = sorted(df_trends['Meetpunt'].unique())
                 
-                selected_meetpunten = st.multiselect(
+                selected_meetpunten_spider = st.multiselect(
                     "📍 Selecteer meetpunt(en) voor seizoensanalyse:",
                     options=alle_meetpunten,
-                    default=alle_meetpunten # Standaard zijn alle meetpunten geselecteerd
+                    default=alle_meetpunten,
+                    key="tab4_spider_meetpunt"
                 )
 
                 # Filter de data op basis van de selectie
-                df_filtered_spider = df_trends[df_trends['Meetpunt'].isin(selected_meetpunten)].copy()
+                df_filtered_spider = df_trends[df_trends['Meetpunt'].isin(selected_meetpunten_spider)].copy()
 
                 if not df_filtered_spider.empty:
                     
                     # 2. Data voorbereiden: Maand en Jaar toevoegen
                     df_filtered_spider['MaandNr'] = df_filtered_spider['Datum'].dt.month
                     
-                    # We maken een unieke sleutel van Jaar en Meetpunt voor de 'color' in de spider chart
-                    df_filtered_spider['Analyse_Groep'] = df_filtered_spider['Meetpunt'] + ' (' + df_filtered_spider['Jaar'].astype(str) + ')'
+                    # Meetpunt is category, dus .astype(str) is nodig voor concatenatie
+                    df_filtered_spider['Analyse_Groep'] = df_filtered_spider['Meetpunt'].astype(str) + ' (' + df_filtered_spider['Jaar'].astype(str) + ')'
 
                     # 3. Aggregeren: Tel overschrijdingen per Analyse_Groep en Maand
                     seasonal_counts = df_filtered_spider.groupby(['Analyse_Groep', 'MaandNr']).size().reset_index(name='Aantal')
                     
-                    # 4. Zorg dat ALLE maanden (1-12) bestaan voor elke Analyse_Groep
+                    # 4. Zorg dat ALLE maanden (1-12) bestaan voor elke Analyse_Groep (via MultiIndex)
                     unieke_groepen = seasonal_counts['Analyse_Groep'].unique()
-                    
                     full_index = pd.MultiIndex.from_product([unieke_groepen, range(1, 13)], names=['Analyse_Groep', 'MaandNr']).to_frame(index=False)
                     
                     # Merge de tellingen hierin, vul NaN op met 0
@@ -971,35 +965,27 @@ def main():
                     
                     # 6. Plotly Line Polar (Spider Chart)
                     fig_radar = px.line_polar(
-                        df_radar, 
-                        r='Aantal', 
-                        theta='MaandNaam', 
-                        color='Analyse_Groep', # Kleur per Meetpunt + Jaar
-                        line_close=True,
-                        markers=True,
-                        title=f"Aantal signaleringsoverschrijdingen per maand voor geselecteerde meetpunten",
+                        df_radar, r='Aantal', theta='MaandNaam', color='Analyse_Groep',
+                        line_close=True, markers=True,
+                        title=f"Aantal signaleringsoverschrijdingen per maand",
                         category_orders={"MaandNaam": ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"]}
                     )
                     
                     fig_radar.update_traces(fill='toself', opacity=0.3) 
                     fig_radar.update_layout(
-                        polar=dict(
-                            radialaxis=dict(visible=True, range=[0, df_radar['Aantal'].max() * 1.1])
-                        ),
+                        polar=dict(radialaxis=dict(visible=True, range=[0, df_radar['Aantal'].max() * 1.1])),
                         legend_title_text='Meetpunt (Jaar)'
                     )
                     
                     st.plotly_chart(fig_radar, use_container_width=True)
-
                 else:
                     st.warning("Selecteer één of meer meetpunten om de seizoensanalyse te zien.")
-            
             else:
                  st.info("Geen overschrijdingen gevonden om een seizoenspatroon te tonen.")
+
             # ---------------------------------------------
-
             st.subheader("Actuele signaleringswaarde overschrijdingen")
-
+            
             df_overtredingen = df_risico[df_risico['Boven_Signalering']].sort_values('Datum', ascending=False)
 
             if not df_overtredingen.empty:
@@ -1012,257 +998,184 @@ def main():
         else:
             st.warning("Geen aangetroffen metingen (boven rapportagegrens) gevonden voor stoffen zonder norm (ug/l).")
 
-    # --- TAB 5: PFAS effectbeoordeling ---
+# --- TAB 5: PFAS ---
     with tab5:
-        st.header("Effectbeoordeling PFAS (relatieve toxiciteit & bioaccumulatie)")
-        st.info("De berekende waarden zijn op basis van lower bound concentraties.")
-
+        st.header("Effectbeoordeling PFAS")
         df_pfas_ref = load_pfas_ref(PFAS_FILE_PATH)
-
-        if df_pfas_ref.empty:
-            st.warning("Kan de PFAS koppeltabel niet laden.")
-        else:
-
+        
+        if not df_pfas_ref.empty:
+            # 1. Voorbereiding & Merging (Vectorized)
+            # We maken een tijdelijke clean kolom in df_filtered voor de merge
+            df_filtered['Stof_Clean'] = df_filtered['Stof'].str.replace(r' \(totaal\)| \(opgelost\)', '', regex=True).str.strip()
             df_pfas_ref['Stofnaam'] = df_pfas_ref['Stofnaam'].str.lower().str.strip()
+            
+            # Inner join om alleen PFAS stoffen over te houden
+            df_pfas_calc = pd.merge(df_filtered, df_pfas_ref, left_on='Stof_Clean', right_on='Stofnaam', how='inner')
+            
+            if not df_pfas_calc.empty:
+                # 2. Globale Berekeningen (één keer voor alle grafieken)
+                # Detectie limiet logica: als '<' in symbool, dan waarde = 0 voor berekening
+                detected = ~df_pfas_calc['Limietsymbool'].astype(str).str.contains('<', na=False)
+                
+                df_pfas_calc['RPF_calc'] = np.where(detected, df_pfas_calc['RPF'], 0)
+                df_pfas_calc['RBF_calc'] = np.where(detected, df_pfas_calc['RBF'], 0)
+                
+                # Waarde omrekenen van ug/l naar ng/l (* 1000)
+                df_pfas_calc['Waarde_ng'] = df_pfas_calc['Waarde'] * 1000
+                
+                # PEQ en Bioaccumulatie berekenen
+                df_pfas_calc['PEQ_Waarde'] = df_pfas_calc['Waarde_ng'] * df_pfas_calc['RPF_calc']
+                df_pfas_calc['Bioacc_Waarde'] = df_pfas_calc['PEQ_Waarde'] * df_pfas_calc['RBF_calc']
 
-            df_filtered['Stof_Match'] = df_filtered['Stof'].str.replace(r' \(totaal\)', '', regex=True)
-            df_filtered['Stof_Match'] = df_filtered['Stof_Match'].str.replace(r' \(opgelost\)', '', regex=True).str.strip()
-
-            df_pfas_calc = pd.merge(
-                df_filtered,
-                df_pfas_ref,
-                left_on='Stof_Match',
-                right_on='Stofnaam',
-                how='inner'
-            )
-
-            if df_pfas_calc.empty:
-                st.info("Geen PFAS stoffen uit de koppeltabel gevonden in de huidige meetdata.")
-                st.markdown("""
-                **Mogelijke oorzaken:**
-                1. De namen komen niet exact overeen (bijv. 'PFOS' vs 'Perfluoroctaansulfonaat').
-                2. Er zitten typefouten in de CSV.
-                            """)
-            else:
-                meetpunten = df_pfas_calc['Meetpunt'].unique()
-                selected_meetpunt = st.selectbox("Selecteer meetpunt voor PFAS PEQ analyse", meetpunten)
-
-                df_plot = df_pfas_calc[df_pfas_calc['Meetpunt'] == selected_meetpunt].copy()
-
-                if df_plot.empty:
-                    st.warning("Geen data voor dit meetpunt.")
-                else:
-                    mask_detected = df_plot['Limietsymbool'].astype(str).str.strip().eq('')
-
-                    df_plot['RPF_calc'] = 0.0
-                    df_plot['RBF_calc'] = 0.0
-
-                    df_plot.loc[mask_detected, 'RPF_calc'] = df_plot['RPF']
-                    df_plot.loc[mask_detected, 'RBF_calc'] = df_plot['RBF']
-
-                    df_plot['Waarde_ng'] = df_plot['Waarde'] * 1000
-
-                    # Berekeningen
-                    df_plot['PEQ_Waarde'] = df_plot['Waarde_ng'] * df_plot['RPF_calc']
-                    df_plot['Bioacc_Waarde'] = df_plot['PEQ_Waarde'] * df_plot['RBF_calc']
-
-                    # GRAFIEK 1: RPF (PEQ)
-                    st.subheader("Relatieve toxiciteit (PEQ in ng/l)")
-                    st.markdown("Relatieve toxiciteit **Waarde (ng/l) × RPF** per individuele stof. De totale staafhoogte is de som PEQ.")
-                    st.info("Deze toetsing is voor de beoordeling van geschiktheid van oppervlaktewater voor de bereiding van drinkwater. De som PEQ risicogrenswaarde is 4.4 ng/PEQ L.")
-
-                    df_plot = df_plot.sort_values('Datum')
-
-                    fig_rpf = px.bar(
-                        df_plot,
-                        x='Datum',
-                        y='PEQ_Waarde',
-                        color='Stof',
-                        title=f'Trend relatieve toxiciteit {selected_meetpunt}',
-                        labels={'PEQ_Waarde': 'PEQ Waarde (ng/l)', 'Datum': 'Datum'},
-                        hover_data={'Waarde_ng': ':.2f', 'RPF': True, 'PEQ_Waarde': ':.2f'}
-                    )
-                    fig_rpf.update_traces(hovertemplate='<b>%{x}</b><br>Stof: %{legendgroup}<br>Conc: %{customdata[0]:.2f} ng/l<br>RPF: %{customdata[1]}<br>PEQ: %{y:.2f}')
-
-                    fig_rpf.add_hline(
-                        y=4.4,
-                        line_dash="dash",
-                        line_color="red",
-                        line_width=2,
-                        annotation_text="Risicogrens: 4.4",
-                        annotation_position="top left",
-                        annotation_font_color="black"
-                    )
-
+                # --- DEEL A: Originele Grafieken (Per Meetpunt) ---
+                mp_opts = sorted(df_pfas_calc['Meetpunt'].unique())
+                sel_mp_pfas = st.selectbox("Selecteer meetpunt", mp_opts)
+                
+                # Filter voor de staafgrafieken
+                df_plot = df_pfas_calc[df_pfas_calc['Meetpunt'] == sel_mp_pfas].copy()
+                
+                col_bar1, col_bar2 = st.columns(2)
+                
+                with col_bar1:
+                    fig_rpf = px.bar(df_plot.sort_values('Datum'), x='Datum', y='PEQ_Waarde', color='Stof', title='Relatieve Toxiciteit (PEQ)')
+                    fig_rpf.add_hline(y=4.4, line_dash="dash", line_color="red", annotation_text="Norm: 4.4")
                     st.plotly_chart(fig_rpf, use_container_width=True)
+                
+                with col_bar2:
+                    fig_rbf = px.bar(df_plot.sort_values('Datum'), x='Datum', y='Bioacc_Waarde', color='Stof', title='Bioaccumulatie')
+                    fig_rbf.add_hline(y=0.3, line_dash="dash", line_color="red", annotation_text="Drempel: 0.3")
+                    st.plotly_chart(fig_rbf, use_container_width=True)
 
-                    st.write("**Som van PEQ-waarden (ng/l) per datum:**")
-                    df_sum_rpf = df_plot.groupby('Datum')['PEQ_Waarde'].sum().reset_index()
-                    st.dataframe(df_sum_rpf.style.format({"PEQ_Waarde": "{:.2f}"}), use_container_width=True)
-                    
-                    # SPIDER CHARTS
-                    st.markdown("---")
-                    st.subheader("🕸️ Seizoenspatroon: PFAS Toxiciteit (PEQ)")
-                    st.info("Deze grafiek toont de gemiddelde totale PEQ-waarde per maand. Hierbij wordt enkel gekeken naar relatieve toxiciteit (RPF), niet naar bioaccumulatie.")
+                # --- DEEL B: NIEUWE SPIDER CHART (Seizoenspatroon) ---
+                st.markdown("---")
+                st.subheader("🕸️ Seizoenspatroon: PFAS Toxiciteit (PEQ)")
+                st.info("Deze grafiek toont de gemiddelde totale PEQ-waarde per maand. Hierbij wordt enkel gekeken naar relatieve toxiciteit (RPF), niet naar bioaccumulatie.")
 
-                    # 1. Selectie voor Spider Chart (Multi-select)
-                    meetpunten_pfas = sorted(df_pfas_calc['Meetpunt'].unique())
-                    
-                    # We gebruiken een nieuwe key om conflicten te voorkomen
-                    selected_meetpunten_spider = st.multiselect(
-                        "📍 Selecteer meetpunt(en) voor PEQ seizoensanalyse:",
-                        options=meetpunten_pfas,
-                        default=[selected_meetpunt] if selected_meetpunt in meetpunten_pfas else meetpunten_pfas[:1]
-                    )
+                # 1. Selectie voor Spider Chart
+                # Gebruik sel_mp_pfas (van hierboven) als slimme default
+                default_spider = [sel_mp_pfas] if sel_mp_pfas in mp_opts else mp_opts[:1]
+                
+                selected_meetpunten_spider = st.multiselect(
+                    "📍 Selecteer meetpunt(en) voor PEQ seizoensanalyse:",
+                    options=mp_opts,
+                    default=default_spider,
+                    key="pfas_spider_multiselect"
+                )
 
-                    if selected_meetpunten_spider:
-                        # 2. Data voorbereiden voor de selectie
-                        df_spider_pfas = df_pfas_calc[df_pfas_calc['Meetpunt'].isin(selected_meetpunten_spider)].copy()
+                if selected_meetpunten_spider:
+                    # 2. Filteren (gebruik de reeds berekende df_pfas_calc)
+                    df_spider_pfas = df_pfas_calc[df_pfas_calc['Meetpunt'].isin(selected_meetpunten_spider)].copy()
 
-                        # Zorg voor juiste numerieke waarden (RPF is al numeric door load_pfas_ref, Waarde ook)
-                        # RPF check voor zekerheid (soms strings in merge)
-                        if df_spider_pfas['RPF'].dtype == 'object':
-                             df_spider_pfas['RPF_val'] = pd.to_numeric(df_spider_pfas['RPF'].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
-                        else:
-                             df_spider_pfas['RPF_val'] = df_spider_pfas['RPF'].fillna(0)
-                        
-                        # Bereken PEQ per regel (Stof)
-                        # Waarde is in ug/l -> * 1000 voor ng/l
-                        df_spider_pfas['PEQ_Row'] = (df_spider_pfas['Waarde'] * 1000) * df_spider_pfas['RPF_val']
+                    if not df_spider_pfas.empty:
+                        # 3. Aggregeren
+                        # Stap A: Sommeer PEQ per Datum + Meetpunt (Totaal PEQ van alle stoffen op één dag)
+                        # observed=True is belangrijk voor performance bij categorische data (Meetpunt)
+                        df_daily_sum = df_spider_pfas.groupby(['Datum', 'Meetpunt'], observed=True)['PEQ_Waarde'].sum().reset_index(name='Dag_Totaal_PEQ')
 
-                        # 3. Aggregeren: 
-                        # Stap A: Sommeer PEQ per Datum + Meetpunt (Totaal PEQ van alle stoffen op die dag)
-                        df_daily_sum = df_spider_pfas.groupby(['Datum', 'Meetpunt'])['PEQ_Row'].sum().reset_index(name='Dag_Totaal_PEQ')
-
-                        # Stap B: Voeg Maand en Jaar toe
+                        # Stap B: Tijdvariabelen toevoegen (Vectorized)
                         df_daily_sum['Jaar'] = df_daily_sum['Datum'].dt.year
                         df_daily_sum['MaandNr'] = df_daily_sum['Datum'].dt.month
                         
-                        # Stap C: Groepeer per Maand om het gemiddelde van de maand te krijgen
-                        # We maken ook hier een unieke groep: Meetpunt + Jaar
-                        df_daily_sum['Analyse_Groep'] = df_daily_sum['Meetpunt'] + ' (' + df_daily_sum['Jaar'].astype(str) + ')'
+                        # Maak label voor de grafiek
+                        df_daily_sum['Analyse_Groep'] = df_daily_sum['Meetpunt'].astype(str) + ' (' + df_daily_sum['Jaar'].astype(str) + ')'
 
+                        # Stap C: Gemiddelde per Maand berekenen
                         df_monthly_avg = df_daily_sum.groupby(['Analyse_Groep', 'MaandNr'])['Dag_Totaal_PEQ'].mean().reset_index(name='Gemiddelde_PEQ')
 
-                        # 4. Gaten vullen (Zorg dat alle maanden 1-12 bestaan voor de lijn)
+                        # 4. Gaten vullen (Zorg dat maand 1 t/m 12 bestaat voor elke lijn)
                         unieke_groepen_pfas = df_monthly_avg['Analyse_Groep'].unique()
-                        full_index_pfas = pd.MultiIndex.from_product(
-                            [unieke_groepen_pfas, range(1, 13)], 
-                            names=['Analyse_Groep', 'MaandNr']
-                        ).to_frame(index=False)
+                        
+                        if len(unieke_groepen_pfas) > 0:
+                            full_index_pfas = pd.MultiIndex.from_product(
+                                [unieke_groepen_pfas, range(1, 13)], 
+                                names=['Analyse_Groep', 'MaandNr']
+                            ).to_frame(index=False)
 
-                        df_radar_pfas = pd.merge(full_index_pfas, df_monthly_avg, on=['Analyse_Groep', 'MaandNr'], how='left').fillna(0)
+                            df_radar_pfas = pd.merge(full_index_pfas, df_monthly_avg, on=['Analyse_Groep', 'MaandNr'], how='left').fillna(0)
 
-                        # 5. Maandnummers naar namen
-                        maand_namen = {
-                            1: 'Jan', 2: 'Feb', 3: 'Mrt', 4: 'Apr', 5: 'Mei', 6: 'Jun',
-                            7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Okt', 11: 'Nov', 12: 'Dec'
-                        }
-                        df_radar_pfas['MaandNaam'] = df_radar_pfas['MaandNr'].map(maand_namen)
+                            # 5. Maandnamen mappen
+                            maand_namen = {
+                                1: 'Jan', 2: 'Feb', 3: 'Mrt', 4: 'Apr', 5: 'Mei', 6: 'Jun',
+                                7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Okt', 11: 'Nov', 12: 'Dec'
+                            }
+                            df_radar_pfas['MaandNaam'] = df_radar_pfas['MaandNr'].map(maand_namen)
 
-                        # 6. Plotten
-                        fig_spider_pfas = px.line_polar(
-                            df_radar_pfas, 
-                            r='Gemiddelde_PEQ', 
-                            theta='MaandNaam', 
-                            color='Analyse_Groep', 
-                            line_close=True,
-                            markers=True,
-                            title="Gemiddelde PEQ Toxiciteit (ng/l) per maand",
-                            category_orders={"MaandNaam": ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"]}
-                        )
+                            # 6. Plotten
+                            fig_spider_pfas = px.line_polar(
+                                df_radar_pfas, 
+                                r='Gemiddelde_PEQ', 
+                                theta='MaandNaam', 
+                                color='Analyse_Groep', 
+                                line_close=True,
+                                markers=True,
+                                title="Gemiddelde PEQ Toxiciteit (ng/l) per maand",
+                                category_orders={"MaandNaam": ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"]}
+                            )
 
-                        fig_spider_pfas.update_traces(fill='toself', opacity=0.3)
-                        fig_spider_pfas.update_layout(
-                            polar=dict(
-                                radialaxis=dict(visible=True, range=[0, df_radar_pfas['Gemiddelde_PEQ'].max() * 1.1])
-                            ),
-                            legend_title_text='Meetpunt (Jaar)'
-                        )
+                            fig_spider_pfas.update_traces(fill='toself', opacity=0.3)
+                            fig_spider_pfas.update_layout(
+                                polar=dict(
+                                    radialaxis=dict(visible=True, range=[0, df_radar_pfas['Gemiddelde_PEQ'].max() * 1.1])
+                                ),
+                                legend_title_text='Meetpunt (Jaar)'
+                            )
 
-                        st.plotly_chart(fig_spider_pfas, use_container_width=True)
+                            st.plotly_chart(fig_spider_pfas, use_container_width=True)
+                        else:
+                            st.info("Geen data over om te plotten na aggregatie.")
                     else:
-                        st.info("Selecteer ten minste één meetpunt om de spider chart te genereren.")
+                        st.info("Geen PFAS data gevonden voor de geselecteerde meetpunten.")
+                else:
+                    st.info("Selecteer ten minste één meetpunt om de spider chart te genereren.")
 
-                    st.divider()
-
-                    # GRAFIEK 2: RBF (Bioaccumulatie)
-                    st.subheader("Relatieve toxiciteit en bioaccumulatie")
-                    st.markdown("Relatieve toxiciteit en bioaccumulatie  **Waarde (ng/l) × RPF × RBF** per individuele PFAS stof. De totale staafhoogte is de som PEQ.")
-                    st.info("Deze toetsing is voor de beoordeling van geschiktheid van oppervlaktewater voor visconsumptie. De som PEQ risicogrenswaarde is 0.3 ng/PEQ L.")
-
-                    fig_rbf = px.bar(
-                        df_plot,
-                        x='Datum',
-                        y='Bioacc_Waarde',
-                        color='Stof',
-                        title=f'Trend relatieve toxiciteit x bioaccumulatie (Waarde ng/l × RPF × RBF) - {selected_meetpunt}',
-                        labels={'Bioacc_Waarde': 'Bioaccumulatie Score', 'Datum': 'Datum'},
-                        hover_data={'Waarde_ng': ':.2f', 'RPF': True, 'RBF': True, 'Bioacc_Waarde': ':.2f'}
-                    )
-                    fig_rbf.update_traces(hovertemplate='<b>%{x}</b><br>Stof: %{legendgroup}<br>Conc: %{customdata[0]:.2f} ng/l<br>RBF: %{customdata[2]}<br>Score: %{y:.2f}')
-
-                    fig_rbf.add_hline(
-                        y=0.3,
-                        line_dash="dash",
-                        line_color="red",
-                        line_width=2,
-                        annotation_text="Risicogrens: 0.3",
-                        annotation_position="top left",
-                        annotation_font_color="black"
-                    )
-
-                    st.plotly_chart(fig_rbf, use_container_width=True)
-
-                    st.write("**Som van Bioaccumulatie-scores per datum:**")
-                    df_sum_rbf = df_plot.groupby('Datum')['Bioacc_Waarde'].sum().reset_index()
-                    st.dataframe(df_sum_rbf.style.format({"Bioacc_Waarde": "{:.2f}"}), use_container_width=True)
+                st.divider()
+                
+            else:
+                st.warning("Geen PFAS matches gevonden in de huidige dataset (check spelling stoffen).")
 
 # --- TAB 6: Herkomst en verdeling stoffen ---
     with tab6:
         st.header("🏭 Herkomst en verdeling van stoffen")
         
         # ---------------------------------------------------------
-        # DATA VOORBEREIDING (Gebruikt de sidebar filters)
+        # DATA VOORBEREIDING
         # ---------------------------------------------------------
         st.info("Hieronder worden de gegevens getoond op basis van de **jaren geselecteerd in de zijbalk**.")
 
-        df_herkomst = df_filtered.copy()
-        df_herkomst = df_herkomst.dropna(subset=['Stof'])
+        # We gebruiken df_filtered (al gefilterd op jaar in sidebar)
+        df_herkomst = df_filtered.dropna(subset=['Stof']).copy()
         
-        # Maak een subset voor alleen waarden boven de rapportagegrens
-        df_detecties = df_herkomst[~df_herkomst['Limietsymbool'].astype(str).str.contains('<', na=False)].copy()
+        # Vectorized check voor detecties (sneller dan string contains in loop)
+        # We nemen aan dat load_data 'Limietsymbool' al heeft opgeschoond (geen NaN)
+        mask_detectie = ~df_herkomst['Limietsymbool'].astype(str).str.contains('<', na=False)
+        df_detecties = df_herkomst[mask_detectie].copy()
 
         # ---------------------------------------------------------
-        # A. TOTAAL OVERZICHT (Taartdiagrammen, Geselecteerde periode)
+        # A. TOTAAL OVERZICHT
         # ---------------------------------------------------------
         st.subheader("Totaalbeeld verdeling (Geselecteerde periode)")
-        
         st.markdown("### 🟢 uitgevoerde metingen vs. 🟠 aangetroffen")
         
         col_total_all, col_total_det = st.columns(2)
 
-        # 1. Linkerkolom: Alles
         with col_total_all:
             st.markdown("**Totaal: alle metingen**")
+            # Value_counts is zeer snel op categorical data
             dist_total = df_herkomst['Stofgroep'].value_counts().reset_index()
             dist_total.columns = ['Stofgroep', 'Aantal metingen']
             
             fig_pie_total = px.pie(
-                dist_total,
-                values='Aantal metingen',
-                names='Stofgroep',
-                title='Aantal metingen (incl. <RG)',
-                hole=0.4
+                dist_total, values='Aantal metingen', names='Stofgroep',
+                title='Aantal metingen (incl. <RG)', hole=0.4
             )
             st.plotly_chart(fig_pie_total, use_container_width=True)
 
             st.markdown("*Top 25 meest gemeten (totaal)*")
+            # Limit voor display performance
             top_stoffen = df_herkomst['Stof'].value_counts().head(25).reset_index()
             top_stoffen.columns = ['Stof', 'Aantal']
             st.dataframe(top_stoffen, use_container_width=True)
 
-        # 2. Rechterkolom: Alleen detecties
         with col_total_det:
             st.markdown("**Filter: aangetroffen stoffen (boven rapportagegrens)**")
             if not df_detecties.empty:
@@ -1270,11 +1183,8 @@ def main():
                 dist_det.columns = ['Stofgroep', 'Aantal x aangetroffen']
                 
                 fig_pie_det = px.pie(
-                    dist_det,
-                    values='Aantal x aangetroffen',
-                    names='Stofgroep',
-                    title='Aantal keer aangetroffen (>RG)',
-                    hole=0.4
+                    dist_det, values='Aantal x aangetroffen', names='Stofgroep',
+                    title='Aantal keer aangetroffen (>RG)', hole=0.4
                 )
                 st.plotly_chart(fig_pie_det, use_container_width=True)
 
@@ -1291,62 +1201,60 @@ def main():
         # B. TRENDANALYSE STOFGROEPEN (ALLE JAREN)
         # ---------------------------------------------------------
         st.subheader("📈 Trendverdeling Stofgroepen (Alle jaren)")
-        st.markdown("Onderstaande grafiek toont de **procentuele** verdeling van de gemeten stofgroepen over de jaren heen. **Let op:** Deze grafiek toont data uit de **volledige dataset**, ongeacht de jaar-filter in de zijbalk.")
+        st.markdown("De grafiek toont data uit de **volledige dataset**, ongeacht de jaar-filter in de zijbalk.")
 
-        # 1. Filteropties voor de trendgrafiek
         col_trend_sel1, col_trend_sel2 = st.columns([1, 3])
         
         with col_trend_sel1:
-            # Checkbox om te kiezen tussen Alle metingen of alleen Detecties
-            alleen_detecties_trend = st.checkbox("Toon alleen aangetroffen stoffen (>RG)", value=False, key="tab6_trend_detectie_checkbox")
+            alleen_detecties_trend = st.checkbox("Toon alleen aangetroffen stoffen (>RG)", value=False, key="tab6_trend_detectie")
         
         with col_trend_sel2:
+            # Gebruik categories voor snelle lookup
             all_meetpunten_trend = sorted(df_main['Meetpunt'].unique())
             selected_meetpunten_trend = st.multiselect(
-                "📍 Selecteer meetpunt(en) voor trendanalyse",
+                "📍 Selecteer meetpunt(en)",
                 options=all_meetpunten_trend,
-                default=all_meetpunten_trend, # Standaard alles selecteren
-                key="tab6_trend_meetpunt_select"
+                default=all_meetpunten_trend,
+                key="tab6_trend_meetpunt"
             )
 
         if selected_meetpunten_trend:
-            # We gebruiken df_main om ALLE jaren te pakken, ongeacht sidebar filter
-            df_trend = df_main[df_main['Meetpunt'].isin(selected_meetpunten_trend)].copy()
-
-            # Filter eventueel op detecties
+            # Filter op df_main (alles)
+            mask_mp = df_main['Meetpunt'].isin(selected_meetpunten_trend)
+            
             if alleen_detecties_trend:
-                df_trend = df_trend[~df_trend['Limietsymbool'].astype(str).str.contains('<', na=False)]
+                # Combineer masks direct voor snelheid
+                mask_det_main = ~df_main['Limietsymbool'].astype(str).str.contains('<', na=False)
+                df_trend = df_main[mask_mp & mask_det_main].copy()
+            else:
+                df_trend = df_main[mask_mp].copy()
 
             if not df_trend.empty:
-                # Jaar kolom aanmaken
                 df_trend['Jaar'] = df_trend['Datum'].dt.year
                 
-                # Aggregeren: Aantal metingen per jaar en stofgroep
-                df_trend_grouped = df_trend.groupby(['Jaar', 'Stofgroep']).size().reset_index(name='Aantal Metingen')
+                # Groupby op categories is heel snel
+                df_grouped = df_trend.groupby(['Jaar', 'Stofgroep'], observed=True).size().reset_index(name='Aantal')
                 
-                # Normaliseren naar 100%
-                df_trend_grouped['Totaal_Jaar'] = df_trend_grouped.groupby('Jaar')['Aantal Metingen'].transform('sum')
-                df_trend_grouped['Percentage'] = (df_trend_grouped['Aantal Metingen'] / df_trend_grouped['Totaal_Jaar']) * 100
+                # Bereken percentages vectorized
+                totaal_per_jaar = df_grouped.groupby('Jaar')['Aantal'].transform('sum')
+                df_grouped['Percentage'] = (df_grouped['Aantal'] / totaal_per_jaar) * 100
                 
-                if not df_trend_grouped.empty:
+                # Drop rows waar percentage 0 of NaN is (kan gebeuren door observed=True bij lege cats)
+                df_grouped = df_grouped[df_grouped['Aantal'] > 0]
+
+                if not df_grouped.empty:
                     fig_trend = px.bar(
-                        df_trend_grouped,
-                        x='Jaar',
-                        y='Percentage', # Gebruik de percentage kolom
-                        color='Stofgroep',
-                        title='Procentuele Verdeling Stofgroepen per Jaar (100% Gestapeld)',
-                        labels={'Percentage': 'Percentage van Totaal', 'Jaar': 'Jaar', 'Stofgroep': 'Stofgroep'},
+                        df_grouped, x='Jaar', y='Percentage', color='Stofgroep',
+                        title='Procentuele Verdeling (100% Gestapeld)',
                         barmode='stack' 
                     )
-                    
                     fig_trend.update_layout(yaxis=dict(range=[0, 100], ticksuffix="%"))
-                    fig_trend.update_xaxes(type='category')
-                    
+                    fig_trend.update_xaxes(type='category') # Zorgt dat jaren als labels worden gezien
                     st.plotly_chart(fig_trend, use_container_width=True)
                 else:
-                    st.info("Geen data gevonden voor de selectie.")
+                    st.info("Geen data na groepering.")
             else:
-                st.info("Geen data gevonden voor deze selectie (mogelijk geen detecties).")
+                st.info("Geen data gevonden voor deze selectie.")
         else:
             st.warning("Selecteer ten minste één meetpunt.")
 
@@ -1359,397 +1267,300 @@ def main():
 
         meetpunten_list = sorted(df_herkomst['Meetpunt'].unique())
         if meetpunten_list:
-            selected_mp_herkomst = st.selectbox("Selecteer een meetpunt voor detailanalyse:", meetpunten_list)
+            selected_mp_herkomst = st.selectbox("Selecteer meetpunt:", meetpunten_list)
 
-            # Dataframes filteren voor meetpunt
+            # Filteren
             df_mp_all = df_herkomst[df_herkomst['Meetpunt'] == selected_mp_herkomst]
             df_mp_det = df_detecties[df_detecties['Meetpunt'] == selected_mp_herkomst]
 
             if not df_mp_all.empty:
                 col_mp_1, col_mp_2 = st.columns(2)
 
-                # Grafiek Alle Metingen
                 with col_mp_1:
                     st.markdown(f"**{selected_mp_herkomst}: Alle metingen**")
-                    dist_mp_all = df_mp_all['Stofgroep'].value_counts().reset_index()
-                    dist_mp_all.columns = ['Stofgroep', 'Aantal']
-                    
-                    fig_pie_mp_all = px.pie(
-                        dist_mp_all,
-                        values='Aantal',
-                        names='Stofgroep',
-                        title=f'Aantal metingen'
-                    )
-                    st.plotly_chart(fig_pie_mp_all, use_container_width=True)
+                    counts_all = df_mp_all['Stofgroep'].value_counts().reset_index()
+                    counts_all.columns = ['Stofgroep', 'Aantal']
+                    st.plotly_chart(px.pie(counts_all, values='Aantal', names='Stofgroep'), use_container_width=True)
 
-                # Grafiek Alleen Detecties
                 with col_mp_2:
                     st.markdown(f"**{selected_mp_herkomst}: > Rapportagegrens**")
                     if not df_mp_det.empty:
-                        dist_mp_det = df_mp_det['Stofgroep'].value_counts().reset_index()
-                        dist_mp_det.columns = ['Stofgroep', 'Aantal']
-                        
-                        fig_pie_mp_det = px.pie(
-                            dist_mp_det,
-                            values='Aantal',
-                            names='Stofgroep',
-                            title=f'Aantal keer aangetroffen'
-                        )
-                        st.plotly_chart(fig_pie_mp_det, use_container_width=True)
+                        counts_det = df_mp_det['Stofgroep'].value_counts().reset_index()
+                        counts_det.columns = ['Stofgroep', 'Aantal']
+                        st.plotly_chart(px.pie(counts_det, values='Aantal', names='Stofgroep'), use_container_width=True)
                     else:
-                        st.info(f"Op meetpunt {selected_mp_herkomst} zijn geen stoffen boven de rapportagegrens aangetroffen.")
+                        st.info("Geen detecties op dit meetpunt.")
 
-                # Detailtabel
-                st.markdown(f"**Details per stofgroep voor {selected_mp_herkomst}**")
+                st.divider()
+                st.markdown(f"### 📋 Detailoverzicht per stofgroep: {selected_mp_herkomst}")
+
+                # 1. Filteroptie: Alles of alleen detecties
+                show_only_detected = st.checkbox(
+                    "Toon in tabel alleen waarden boven rapportagegrens (>RG)", 
+                    value=False,
+                    key="tab6_table_checkbox"
+                )
                 
-                # Toggle voor tabel weergave
-                toon_alleen_detecties = st.checkbox("Toon in tabel alleen stoffen > Rapportagegrens", value=True, key="tab6_detail_detectie_checkbox")
+                # Bepaal welke dataset we gebruiken
+                df_table_source = df_mp_det if show_only_detected else df_mp_all
+
+                if not df_table_source.empty:
+                    # 2. Beschikbare stofgroepen bepalen (dynamisch op basis van filter)
+                    # We gebruiken dropna() en unique() om alleen relevante groepen te tonen
+                    beschikbare_groepen = sorted(list(df_table_source['Stofgroep'].dropna().unique()))
+                    
+                    if beschikbare_groepen:
+                        # 3. Dropdown menu
+                        selected_stofgroep_table = st.selectbox(
+                            "Selecteer een stofgroep om de details te bekijken:", 
+                            options=beschikbare_groepen,
+                            key="tab6_table_selectbox"
+                        )
+                        
+                        # 4. Data filteren op gekozen groep
+                        df_table_filtered = df_table_source[df_table_source['Stofgroep'] == selected_stofgroep_table].copy()
+                        
+                        # 5. Tabel samenstellen (Aggregatie per stof voor overzichtelijkheid)
+                        table_agg = df_table_filtered.groupby('Stof', observed=True).agg(
+                            Aantal_Metingen=('Waarde', 'count'),
+                            Gemiddelde=('Waarde', 'mean'),
+                            Maximum=('Waarde', 'max'),
+                            Laatste_Datum=('Datum', 'max'),
+                            Eenheid=('Eenheid', 'first')
+                        ).reset_index().sort_values('Maximum', ascending=False)
+
+                        # Opmaak verfraaien
+                        table_agg['Laatste_Datum'] = table_agg['Laatste_Datum'].dt.strftime('%Y-%m-%d')
+                        table_agg['Gemiddelde'] = table_agg['Gemiddelde'].map('{:,.4f}'.format)
+                        table_agg['Maximum'] = table_agg['Maximum'].map('{:,.4f}'.format)
+                        
+                        # 6. Weergeven
+                        st.dataframe(table_agg, use_container_width=True)
+                    else:
+                        st.info("Geen stofgroepen gevonden in de huidige selectie.")
+                else:
+                    st.warning("Geen metingen gevonden voor de huidige filterinstellingen.")
                 
-                source_df = df_mp_det if toon_alleen_detecties else df_mp_all
+                # ---------------------------------------------------------
+            # D. STOFFEN ZONDER GROEP (ONBEKEND)
+            # ---------------------------------------------------------
+            st.divider()
+            st.subheader("⚠️ Stoffen zonder toegewezen stofgroep")
+            
+            # We kijken naar df_herkomst (dat is df_filtered binnen tab 6 context)
+            # In de load_data functie krijgen niet-gematchte stoffen de label 'Onbekend'
+            df_onbekend = df_herkomst[df_herkomst['Stofgroep'] == 'Onbekend'].copy()
+            
+            if not df_onbekend.empty:
+                st.warning(f"Er zijn **{df_onbekend['Stof'].nunique()}** unieke stoffen aangetroffen die niet in de configuratielijst staan.")
+                st.info("Onderstaande tabel toont stoffen die de categorie 'Onbekend' hebben gekregen.")
+                
+                # We tonen de unieke stoffen, hoe vaak ze voorkomen en de meest recente datum
+                onbekend_summary = df_onbekend.groupby('Stof', observed=True).agg(
+                    Aantal_Metingen=('Waarde', 'count'),
+                    Laatste_Datum=('Datum', 'max'),
+                    Voorbeeld_Waarde=('Waarde', 'first'),
+                    Eenheid=('Eenheid', 'first')
+                ).sort_values('Aantal_Metingen', ascending=False).reset_index()
+                
+                # Formatteer de datum voor netheid
+                onbekend_summary['Laatste_Datum'] = onbekend_summary['Laatste_Datum'].dt.strftime('%Y-%m-%d')
+                
+                st.dataframe(onbekend_summary, use_container_width=True)
+            else:
+                st.success("✅ Alle aangetroffen stoffen zijn succesvol ingedeeld in een stofgroep.")
                 
                 if not source_df.empty:
+                    # observed=True zorgt dat we alleen relevante groepen zien
                     beschikbare_groepen = source_df['Stofgroep'].unique()
-                    selected_groep = st.selectbox("Welke stofgroep wil je in detail zien?", sorted(beschikbare_groepen))
-
-                    df_detail_groep = source_df[source_df['Stofgroep'] == selected_groep]
-
-                    detail_agg = df_detail_groep.groupby('Stof').agg(
-                        Aantal_Metingen=('Waarde', 'count'),
-                        Gemiddelde_Waarde=('Waarde', 'mean'),
-                        Max_Waarde=('Waarde', 'max'),
-                        Eenheid=('Eenheid', 'first')
-                    ).sort_values('Aantal_Metingen', ascending=False).reset_index()
+                    # Filter lege categorieen eruit
+                    beschikbare_groepen = [g for g in beschikbare_groepen if g in source_df['Stofgroep'].values]
                     
-                    # Format getallen
-                    detail_agg['Gemiddelde_Waarde'] = detail_agg['Gemiddelde_Waarde'].map('{:,.4f}'.format)
-                    detail_agg['Max_Waarde'] = detail_agg['Max_Waarde'].map('{:,.4f}'.format)
+                    if beschikbare_groepen:
+                        selected_groep = st.selectbox("Kies stofgroep:", sorted(beschikbare_groepen))
 
-                    st.dataframe(detail_agg, use_container_width=True)
+                        df_detail = source_df[source_df['Stofgroep'] == selected_groep]
+
+                        # Aggregatie
+                        detail_agg = df_detail.groupby('Stof', observed=True).agg(
+                            Aantal=('Waarde', 'count'),
+                            Gemiddelde=('Waarde', 'mean'),
+                            Max=('Waarde', 'max'),
+                            Eenheid=('Eenheid', 'first')
+                        ).sort_values('Aantal', ascending=False).reset_index()
+                        
+                        detail_agg['Gemiddelde'] = detail_agg['Gemiddelde'].map('{:,.4f}'.format)
+                        detail_agg['Max'] = detail_agg['Max'].map('{:,.4f}'.format)
+
+                        st.dataframe(detail_agg, use_container_width=True)
+                    else:
+                        st.info("Geen stofgroepen beschikbaar in deze dataset.")
                 else:
-                    st.warning("Geen data beschikbaar voor de huidige selectie/filter.")
+                    st.warning("Geen data beschikbaar voor tabel.")
 
-            else:
-                st.warning("Geen data gevonden voor dit meetpunt.")
-        else:
-            st.warning("Geen meetpunten beschikbaar in de gefilterde set.")
-
-        st.divider()
-
-        # ---------------------------------------------------------
-        # D. OVERZICHT ONBEKENDE STOFFEN
-        # ---------------------------------------------------------
-        st.subheader("❓ Overzicht categorie 'onbekend'")
-        st.info("Onderstaande tabel toont de unieke stoffen die niet automatisch herkend werden door de categoriseringsfunctie.")
-
-        # We kijken hier naar de unieke stoffen uit de HELE dataset
-        df_onbekend = df_herkomst[df_herkomst['Stofgroep'] == 'Onbekend']
-
-        if not df_onbekend.empty:
-            df_onbekend_unique = df_onbekend.groupby('Stof').agg(
-                Aantal_Metingen=('Waarde', 'count'),
-                Eenheid=('Eenheid', 'first'),
-                Voorbeeld_Waarde=('Waarde', 'mean')
-            ).reset_index().sort_values('Stof')
-
-            df_onbekend_unique['Voorbeeld_Waarde'] = df_onbekend_unique['Voorbeeld_Waarde'].round(2)
-
-            st.dataframe(df_onbekend_unique, use_container_width=True)
-        else:
-            st.success("Alle gemeten stoffen zijn succesvol ingedeeld in een categorie.")
-            
-# --- TAB 7: Ruimtelijke analyse ---
+    # --- TAB 7: Ruimtelijke analyse ---
     with tab7:
         st.header("🔍 Ruimtelijke analyse")
-        st.markdown("Selecteer filters om data te analyseren.")
+        
+        # We werken hier verder met een kopie van df_filtered (al gefilterd op jaren sidebar)
+        # Optimalisatie: Kopieer alleen relevante kolommen
+        cols_needed = ['Datum', 'Meetpunt', 'Stof', 'Stofgroep', 'Waarde', 'Eenheid']
+        df_space = df_filtered[cols_needed].copy()
 
-        # Maak een kopie van df_main om bewerkingen op uit te voeren
-        df_space = df_filtered.copy()
-
-        # Datumbereik bepalen voor de date pickers
-        min_date = df_space['Datum'].min().date() if not df_space['Datum'].isnull().all() else datetime.date(2022, 1, 1)
-        max_date = df_space['Datum'].max().date() if not df_space['Datum'].isnull().all() else datetime.date(2025, 12, 31)
-
-        # Gegevens voor dropdowns (opties)
-        loc_opties_all = sorted(df_space['Meetpunt'].unique())
-        stofgroep_opties = sorted(df_space['Stofgroep'].unique())
-        fold_change_opties = sorted(df_space['Meetpunt'].unique())
-    
-        # Haal unieke jaren op uit de data
-        if not df_space.empty and 'Datum' in df_space.columns:
-            jaar_opties = sorted(df_space['Datum'].dt.year.unique())
+        # Datum bereik bepalen
+        if not df_space.empty:
+            min_d, max_d = df_space['Datum'].min().date(), df_space['Datum'].max().date()
         else:
-            jaar_opties = []
+            min_d, max_d = datetime(2022,1,1).date(), datetime(2025,12,31).date()
 
-        # --- Rijk 1: Filters (Nu over 2 rijen verdeeld voor duidelijkheid) ---
+        # Filters UI
         with st.container():
-            # Rij 1: Tijdinstellingen (Jaar, Zomer, Datum bereik)
-            col_zomer, col_start, col_end = st.columns([1.5, 2, 2])           
-          
-            # B. Zomerhalfjaar Schakelaar
-            col_zomer.write("") 
-            col_zomer.write("") 
-            zomerhalfjaar = col_zomer.checkbox(
-                "Alleen Zomerhalfjaar\n(1 apr - 30 sep)", 
-                value=False,
-            )
-
-            # C. Datum Pickers (als extra verfijning)
-            start_date = col_start.date_input(
-                "Startdatum (verfijning)", 
-                value=min_date, 
-                min_value=min_date, 
-                max_value=max_date,
-            )
-
-            end_date = col_end.date_input(
-                "Einddatum (verfijning)", 
-                value=max_date, 
-                min_value=min_date, 
-                max_value=max_date,
-            )
+            c_zomer, c_start, c_end = st.columns([1.5, 2, 2])
             
-            # Rij 2: Locatie en stof instellingen
-            col_loc, col_stofgroep, col_stof = st.columns([2, 2, 2])
-
-            #D. Meetpunt
-            meetpunt_options = loc_opties_all 
-                
-            locaties_selected = col_loc.multiselect(
-                "Meetpunt",
-                options=meetpunt_options,
-                default=meetpunt_options,
-            )
-
-            # F. Stofgroep
-            stofgroep_selected = col_stofgroep.multiselect(
-            "Stofgroep",
-            options=stofgroep_opties,
-            default=stofgroep_opties[0] if stofgroep_opties else None,
-        )
-
-            # Filter stof_opties op basis van geselecteerde stofgroep
-            if stofgroep_selected:
-                stof_opties = sorted(df_space[df_space['Stofgroep'].isin(stofgroep_selected)]['Stof'].unique())
+            c_zomer.write("")
+            c_zomer.write("")
+            zomerhalfjaar = c_zomer.checkbox("Alleen Zomerhalfjaar (apr-sep)", value=False)
+            
+            start_date = c_start.date_input("Startdatum", value=min_d, min_value=min_d, max_value=max_d)
+            end_date = c_end.date_input("Einddatum", value=max_d, min_value=min_d, max_value=max_d)
+            
+            c_loc, c_grp, c_stof = st.columns([2, 2, 2])
+            
+            # Opties ophalen (gebruik categories voor snelheid)
+            loc_opts = sorted(df_space['Meetpunt'].unique())
+            sel_loc = c_loc.multiselect("Meetpunt", loc_opts, default=loc_opts)
+            
+            grp_opts = sorted(df_space['Stofgroep'].unique())
+            sel_grp = c_grp.multiselect("Stofgroep", grp_opts, default=[grp_opts[0]] if grp_opts else None)
+            
+            # Contextuele filter voor stof
+            if sel_grp:
+                # Filter de opties snel
+                mask_grp_opt = df_space['Stofgroep'].isin(sel_grp)
+                stof_opts = sorted(df_space.loc[mask_grp_opt, 'Stof'].unique())
             else:
-                stof_opties = sorted(df_space['Stof'].unique())
-                        
-            # E. Stof
-            # Stel de defaultwaarde voor stoffen in op basis van de beschikbare stoffen
-            default_stoffen = stof_opties[:1] if stof_opties else []
-            stoffen_selected = col_stof.multiselect(
-                "Stof",
-                options=stof_opties,
-                default=default_stoffen,
-            )
-        
-        # DATA FILTEREN
+                stof_opts = sorted(df_space['Stof'].unique())
             
-        dff = df_space
+            sel_stof = c_stof.multiselect("Stof", stof_opts, default=stof_opts[:1] if stof_opts else [])
 
-        # 0b. Filter op Zomerhalfjaar (maand 4 t/m 9)
+        # --- DATA FILTERING LOGICA (VECTORIZED) ---
+        
+        # 1. Datum Filter (Pandas is optimized for datetime slicing)
+        mask_date = (df_space['Datum'].dt.date >= start_date) & (df_space['Datum'].dt.date <= end_date)
+        
+        # 2. Zomer Filter
         if zomerhalfjaar:
-            # Maand 4 is april, Maand 9 is september
-            dff = dff[(dff['Datum'].dt.month >= 4) & (dff['Datum'].dt.month <= 9)].copy()
-
-        # Datumconversie
-        start_date_dt = pd.to_datetime(start_date)
-        end_date_dt = pd.to_datetime(end_date)
-
-        # 1. Filter op Datum (Verfijning)
-        if start_date_dt and end_date_dt:
-            dff = dff[
-                (dff['Datum'] >= start_date_dt) & 
-                (dff['Datum'] <= end_date_dt)
-            ].copy()
-        
-        # 2. Filter op Stofgroep
-        if stofgroep_selected:
-            dff = dff[dff['Stofgroep'].isin(stofgroep_selected)].copy()
-        
+            # dt.month is vectorized en erg snel
+            mask_zomer = (df_space['Datum'].dt.month >= 4) & (df_space['Datum'].dt.month <= 9)
+            mask_date = mask_date & mask_zomer
             
-        # 3. Filter op Meetpunt
-        if locaties_selected:
-            dff = dff[dff['Meetpunt'].isin(locaties_selected)].copy()
+        # 3. Categorische filters
+        # Check op None om warning te voorkomen bij lege selectie
+        mask_loc = df_space['Meetpunt'].isin(sel_loc) if sel_loc else pd.Series(False, index=df_space.index)
+        mask_grp = df_space['Stofgroep'].isin(sel_grp) if sel_grp else pd.Series(True, index=df_space.index)
+        mask_stof = df_space['Stof'].isin(sel_stof) if sel_stof else pd.Series(False, index=df_space.index)
 
-        # Controleer of er stoffen zijn geselecteerd
-        if not stoffen_selected:
-            st.warning("Selecteer minstens één stof om de data te kunnen weergeven.")
-        elif dff.empty or locaties_selected is None or not locaties_selected:
+        # Pas alle filters in één keer toe
+        dff_final = df_space[mask_date & mask_loc & mask_grp & mask_stof].copy()
+
+        if dff_final.empty:
             st.warning("Geen data beschikbaar voor de geselecteerde criteria.")
-        
-        # --- Geen data gevonden fallback ---
-        if dff.empty or locaties_selected is None or not locaties_selected:
-            st.warning("Geen data beschikbaar voor de geselecteerde criteria.")
-            return # Stop de rendering voor dit tabblad
+        else:
+            # --- PLOTS ---
             
-        # Filter data voor grafieken die afhankelijk zijn van stoffen_selected
-        dff_stof = dff[dff['Stof'].isin(stoffen_selected)].copy() if stoffen_selected else pd.DataFrame(columns=dff.columns)
-        
-        # ======================================================
-        # PLOT GENERATIE
-        # ======================================================
-
-        # --- Tijdlijn Grafiek ---
-        if dff_stof.empty:
-            time_df = pd.DataFrame(columns=['Datum', 'Meetpunt', 'Waarde'])
-        else:
-            time_df = dff_stof.groupby(['Datum', 'Meetpunt'])['Waarde'].mean().reset_index()
-        
-        tijd_fig = px.line(
-            time_df, x="Datum", y="Waarde", color="Meetpunt",
-            title="Gemiddelde waarde (van geselecteerde stoffen) per locatie in de tijd", markers=True)
-             
-        # Maak een dataframe met de coördinaten
-        coords = df_main[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().rename(columns={'Latitude': 'lat', 'Longitude': 'lon'})
+            # A. Tijdlijn & Kaart
+            col_kaart, col_tijd = st.columns(2)
             
-        if dff_stof.empty:
-            # Voorkom errors als er nog geen Stof is gekozen
-            loc_df = pd.DataFrame(columns=["Meetpunt", "Waarde", "lat", "lon"])
-        else:
-            loc_df = dff_stof.groupby("Meetpunt")["Waarde"].mean().reset_index().merge(coords, on="Meetpunt", how="left")
-        
-        # Bepaal het midden van de kaart op basis van de beschikbare punten
-        center_lat = loc_df['lat'].mean() if not loc_df.empty else 52.4 
-        center_lon = loc_df['lon'].mean() if not loc_df.empty else 5.6
+            # Aggregaties voor plots (observed=True voor speed)
+            time_agg = dff_final.groupby(['Datum', 'Meetpunt'], observed=True)['Waarde'].mean().reset_index()
+            tijd_fig = px.line(time_agg, x="Datum", y="Waarde", color="Meetpunt", markers=True, title="Verloop in de tijd")
+            col_tijd.plotly_chart(tijd_fig, use_container_width=True)
 
-        if not loc_df.empty:
-            kaart_fig = px.scatter_mapbox(
-                loc_df, 
-                lat="lat", 
-                lon="lon", 
-                color="Waarde", 
-                color_continuous_scale="YlOrRd",
-                size=[12] * len(loc_df) if not loc_df.empty else [], # Voorkomt fout bij lege data
-                hover_name="Meetpunt",
-                hover_data={
-                    "lat": False, 
-                    "lon": False, 
-                    "Waarde": ":.2f"
-                },
-                center={"lat": center_lat, "lon": center_lon},
-                mapbox_style="open-street-map",
-                zoom=7.5, 
-                title="Gemiddelde waarde per locatie (van geselecteerde stoffen)"
-            )
-        
-        # Rijk 2: Kaart en Tijdlijn
-        col_kaart, col_tijdlijn = st.columns(2)
-        col_kaart.plotly_chart(kaart_fig, use_container_width=True)
-        col_tijdlijn.plotly_chart(tijd_fig, use_container_width=True)
+            # Kaart data
+            loc_agg = dff_final.groupby("Meetpunt", observed=True)["Waarde"].mean().reset_index()
+            
+            # Efficiënte coördinaten lookup (zonder grote merge op de hele dataset)
+            # We halen unieke coords uit df_main (origineel)
+            coords_ref = df_main[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().dropna()
+            
+            # Merge alleen de geaggregeerde tabel
+            loc_map = pd.merge(loc_agg, coords_ref, on='Meetpunt', how='inner')
+            
+            if not loc_map.empty:
+                kaart_fig = px.scatter_mapbox(
+                    loc_map, lat="Latitude", lon="Longitude", color="Waarde",
+                    size=[15]*len(loc_map), hover_name="Meetpunt",
+                    color_continuous_scale="YlOrRd", zoom=7.5, mapbox_style="open-street-map",
+                    title="Gemiddelde waarde per locatie"
+                )
+                col_kaart.plotly_chart(kaart_fig, use_container_width=True)
+            else:
+                col_kaart.info("Geen coördinaten beschikbaar voor deze meetpunten.")
 
-    # --- Plotten die afhankelijk zijn van stofselectie ---
-        if dff_stof.empty:
-            st.warning("Selecteer stoffen om de resterende grafieken te zien.")
-        else:
-            # Rijk 3: Boxplot en Strip Plot
+            # B. Boxplot & Strip
             col_box, col_strip = st.columns(2)
-        
-        # --- Boxplot Grafiek ---
-        boxplot_fig = px.box(
-            dff_stof, 
-            x="Stof",
-            y="Waarde",
-            color="Meetpunt",
-            points="all", 
-            hover_data=["Datum", "Waarde", "Eenheid"],
-            title='Verdeling per stof(fen) en locatie'
-        )
-        boxplot_fig.update_layout(xaxis_title='Stof', yaxis_title='Waarde')
-        boxplot_fig.update_traces(quartilemethod="exclusive")
-        col_box.plotly_chart(boxplot_fig, use_container_width=True)
+            
+            box_fig = px.box(dff_final, x="Stof", y="Waarde", color="Meetpunt", title="Verdeling per stof")
+            col_box.plotly_chart(box_fig, use_container_width=True)
+            
+            strip_fig = px.strip(dff_final, x="Waarde", y="Stof", color="Meetpunt", title="Individuele meetwaarden")
+            col_strip.plotly_chart(strip_fig, use_container_width=True)
 
-        # --- Strip/Dumbbell Plot Grafiek ---
-        dumbbell_fig = px.strip(
-            dff_stof, 
-            x="Waarde", 
-            y="Stof", 
-            color="Meetpunt",
-            stripmode="group",
-            hover_data=["Datum", "Meetpunt", "Waarde"],
-            title='Individuele waarde(n) per stof(fen) en locatie'
-        )
-        dumbbell_fig.update_layout(xaxis_title='Individuele Meetwaarde', yaxis_title='Stof')
-        dumbbell_fig.update_traces(orientation='h')
-        col_strip.plotly_chart(dumbbell_fig, use_container_width=True)
-        
-        # Rijk 4: Heatmap en Subset/Stofgroep
-        col_heat, col_subset = st.columns(2)
-        
-        # --- Heatmap Grafiek ---
-        heat_df = (
-            dff_stof.groupby(["Stof", "Meetpunt"])["Waarde"]
-            .mean().reset_index()
-            .pivot(index="Stof", columns="Meetpunt", values="Waarde")
-        )
-        heat_fig = px.imshow(heat_df, aspect="auto", color_continuous_scale="YlGnBu", text_auto=".3f",
-                            title="Gemiddelde waarden per Stof en Meetpunt")
-        col_heat.plotly_chart(heat_fig, use_container_width=True)
-        
-        # --- Subsetanalyse Grafiek ---
-        subset_df = dff_stof.groupby(["Stof", "Meetpunt"])["Waarde"].mean().reset_index()
-        
-        subset_fig = px.bar(
-            subset_df, 
-            x="Stof", 
-            y="Waarde", 
-            color="Meetpunt",
-            barmode="group",
-            title="Gemiddelde waarde per meetpunt per stof(fen)", 
-            text_auto=".2f"
-        )
-        col_subset.plotly_chart(subset_fig, use_container_width=True)
-        
-        # Rijk 5: Fold Change Analyse
-        st.markdown("---")
-        st.subheader("Log2 Fold Change Analyse")
-        
-        fold_change_ref_selected = st.selectbox(
-            "Selecteer referentielocatie voor Log2Fold Change Analyse",
-            options=fold_change_opties,
-            index=0 if fold_change_opties else None,
-        )
-        
-        if not fold_change_ref_selected:
-            fold_change_fig = px.scatter(title="Selecteer een referentielocatie voor fc plot")
-            st.plotly_chart(fold_change_fig, use_container_width=True)
-        else:
-            # 1. Bereken gemiddelde waarde per Stof en Meetpunt
-            fold_change_df = dff_stof.groupby(["Stof", "Meetpunt"])["Waarde"].mean().reset_index()
+            # C. Heatmap & Bar
+            col_heat, col_sub = st.columns(2)
             
-            # 2. Haal de gemiddelden van de Referentie Locatie op
-            ref_df = fold_change_df[fold_change_df["Meetpunt"] == fold_change_ref_selected].rename(columns={'Waarde': 'Ref_Waarde'})
-            ref_df = ref_df[["Stof", "Ref_Waarde"]]
+            # Pivot voor heatmap (groupby + pivot is vaak schoner dan pivot_table op grote sets)
+            heat_data = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].mean().unstack()
+            heat_fig = px.imshow(heat_data, aspect="auto", color_continuous_scale="YlGnBu", title="Heatmap Gemiddelden")
+            col_heat.plotly_chart(heat_fig, use_container_width=True)
             
-            # 3. Merge met de volledige data
-            stof_df = fold_change_df.merge(ref_df, on="Stof", how="left")
-            
-            # 4. Bereken Log2 Fold Change
-            stof_df['Log2_Fold_Change'] = np.log2(stof_df['Waarde'] / stof_df['Ref_Waarde'])
+            sub_agg = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].mean().reset_index()
+            sub_fig = px.bar(sub_agg, x="Stof", y="Waarde", color="Meetpunt", barmode="group", title="Gemiddelde per meetpunt")
+            col_sub.plotly_chart(sub_fig, use_container_width=True)
 
-            # 5. Filter de referentie locatie uit de plot
-            plot_df = stof_df[stof_df["Meetpunt"] != fold_change_ref_selected]
+            # D. Fold Change Analyse
+            st.markdown("---")
+            st.subheader("Log2 Fold Change Analyse")
             
-            # 6. Creëer de Fold Change Plot (Scatter plot)
-            fold_change_fig = px.scatter(
-                plot_df, 
-                x="Log2_Fold_Change", 
-                y="Stof", 
-                color="Meetpunt",
-                hover_data={"Log2_Fold_Change": ':.2f', "Waarde": ':.2f', "Ref_Waarde": ':.2f'},
-                title=f"Log2 Fold Change (gemiddeld) t.o.v. {fold_change_ref_selected}"
-            )
+            # Opties beperken tot meetpunten die in de huidige gefilterde set zitten
+            beschikbare_mp_fc = sorted(dff_final['Meetpunt'].unique())
             
-            # 7. Voeg verticale lijnen toe
-            fold_change_fig.add_vline(x=0, line_width=1, line_dash="dash", line_color="red", annotation_text="Geen Verschil", annotation_position="top left")
-            fold_change_fig.add_vline(x=1, line_width=0.5, line_dash="dash", line_color="gray")
-            fold_change_fig.add_vline(x=-1, line_width=0.5, line_dash="dash", line_color="gray")
+            if len(beschikbare_mp_fc) > 1:
+                ref_mp = st.selectbox("Selecteer referentie meetpunt", beschikbare_mp_fc)
+                
+                # Bereken gemiddelden
+                means = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].mean().reset_index()
+                
+                # Split in Ref en Rest
+                ref_data = means[means['Meetpunt'] == ref_mp][['Stof', 'Waarde']].rename(columns={'Waarde': 'Ref_Waarde'})
+                
+                # Merge terug (Inner join: we kunnen alleen vergelijken als stof op beide plekken gemeten is)
+                fc_data = pd.merge(means, ref_data, on='Stof', how='inner')
+                
+                # Vectorized berekening
+                # Voorkom delen door nul
+                fc_data = fc_data[fc_data['Ref_Waarde'] > 0]
+                fc_data['Log2FC'] = np.log2(fc_data['Waarde'] / fc_data['Ref_Waarde'])
+                
+                # Filter referentie zelf eruit voor plot
+                fc_plot = fc_data[fc_data['Meetpunt'] != ref_mp]
+                
+                if not fc_plot.empty:
+                    fig_fc = px.scatter(
+                        fc_plot, x="Log2FC", y="Stof", color="Meetpunt",
+                        title=f"Fold Change t.o.v. {ref_mp}",
+                        hover_data={'Waarde':':.2f', 'Ref_Waarde':':.2f'}
+                    )
+                    fig_fc.add_vline(x=0, line_dash="dash", line_color="black")
+                    fig_fc.add_vline(x=1, line_dash="dot", line_color="gray")
+                    fig_fc.add_vline(x=-1, line_dash="dot", line_color="gray")
+                    st.plotly_chart(fig_fc, use_container_width=True)
+                else:
+                    st.info("Geen overlappende stoffen gevonden om te vergelijken.")
+            else:
+                st.info("Selecteer minimaal 2 meetpunten voor Fold Change analyse.")
 
-            fold_change_fig.update_layout(
-                xaxis_title='log2(waarde/waarde referentie)',
-                yaxis_title='Stof'
-            )
-
-            st.plotly_chart(fold_change_fig, use_container_width=True)
+            #st.plotly_chart(fold_change_fig, use_container_width=True)
             
         # Toon de gefilterde data
         #st.write("Gefilterde data:", df_space)       
