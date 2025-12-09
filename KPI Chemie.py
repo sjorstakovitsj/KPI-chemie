@@ -170,8 +170,11 @@ def load_data(file_path: str) -> pd.DataFrame:
     # 2. Definieer de condities
     mask_nvt = df['Stof'] == 'NVT' # Basismarkering voor NVT
     
-    # NIEUWE CONDITIE: mask_gadolinium
-    mask_gadolinium = df['Stof'].str.lower() == 'gadolinium'
+    # NIEUWE CONDITIE VOOR GADOLINIUM: Stof is 'gadolinium' EN Eenheid is 'dimensieloos'
+    mask_gadolinium_antropogeen = (
+        (df['Stof'].str.lower() == 'gadolinium') & 
+        (df['Eenheid_Omschr_lower'] == 'dimensieloos')
+    )
     
     conditions = [
         # 1. Hardheid
@@ -190,8 +193,8 @@ def load_data(file_path: str) -> pd.DataFrame:
         mask_nvt & (df['Eenheid_Omschr_lower'] == 'graad celsius'),
         # 8. Extinctie
         mask_nvt & (df['Eenheid_Omschr_lower'] == 'per meter'),
-        # 9. Gadolinium (Antropogeen)
-        mask_gadolinium & (df['Hoedanigheid_Omschr_lower'].str.contains('antropogeen / opgeloste fractie', na=False)),
+        # 9. Gadolinium (Antropogeen/Opgelost) - De gewenste uiteindelijke naam
+        mask_gadolinium_antropogeen
     ]
     
     # 3. Corresponderende waarden
