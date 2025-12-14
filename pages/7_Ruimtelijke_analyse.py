@@ -17,7 +17,8 @@ st.header("🔍 Ruimtelijke analyse")
 
 # We werken hier verder met een kopie van df_filtered (al gefilterd op jaren sidebar)
 # Optimalisatie: Kopieer alleen relevante kolommen
-cols_needed = ['Datum', 'Meetpunt', 'Stof', 'Stofgroep', 'Waarde', 'Eenheid']
+# AANGEPAST: 'Limietsymbool' toegevoegd aan cols_needed voor de filter functionaliteit
+cols_needed = ['Datum', 'Meetpunt', 'Stof', 'Stofgroep', 'Waarde', 'Eenheid', 'Limietsymbool']
 df_space = df_filtered[cols_needed].copy()
 
 # Datum bereik bepalen
@@ -30,9 +31,13 @@ else:
 with st.container():
     c_zomer, c_start, c_end = st.columns([1.5, 2, 2])
 
-    c_zomer.write("")
-    c_zomer.write("")
-    zomerhalfjaar = c_zomer.checkbox("Alleen Zomerhalfjaar (apr-sep)", value=False)
+    c_zomer.write("") # Spacing voor uitlijning
+    
+    # Checkbox 1: Zomerhalfjaar
+    zomerhalfjaar = c_zomer.checkbox("Alleen zomerhalfjaar (apr-sep)", value=False)
+    
+    # AANGEPAST: Checkbox 2: Alleen detecties (>RG)
+    alleen_detecties = c_zomer.checkbox("Alleen aangetroffen waarden (>RG)", value=False)
 
     start_date = c_start.date_input("Startdatum", value=min_d, min_value=min_d, max_value=max_d)
     end_date = c_end.date_input("Einddatum", value=max_d, min_value=min_d, max_value=max_d)
@@ -73,8 +78,15 @@ mask_loc = df_space['Meetpunt'].isin(sel_loc) if sel_loc else pd.Series(False, i
 mask_grp = df_space['Stofgroep'].isin(sel_grp) if sel_grp else pd.Series(True, index=df_space.index)
 mask_stof = df_space['Stof'].isin(sel_stof) if sel_stof else pd.Series(False, index=df_space.index)
 
-# Pas alle filters in één keer toe
-dff_final = df_space[mask_date & mask_loc & mask_grp & mask_stof].copy()
+# AANGEPAST: 4. Detectie Limiet Filter (>RG)
+if alleen_detecties:
+    # Filter rijen waar Limietsymbool een '<' bevat eruit
+    mask_limit = ~df_space['Limietsymbool'].astype(str).str.contains('<', na=False)
+else:
+    mask_limit = pd.Series(True, index=df_space.index)
+
+# Pas alle filters in één keer toe (inclusief mask_limit)
+dff_final = df_space[mask_date & mask_loc & mask_grp & mask_stof & mask_limit].copy()
 
 if dff_final.empty:
     st.warning("Geen data beschikbaar voor de geselecteerde criteria.")
