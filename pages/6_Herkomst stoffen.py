@@ -83,7 +83,8 @@ st.markdown("De grafiek toont data uit de **volledige dataset**, ongeacht de jaa
 col_trend_sel1, col_trend_sel2 = st.columns([1, 3])
 
 with col_trend_sel1:
-    alleen_detecties_trend = st.checkbox("Toon alleen aangetroffen stoffen (>RG)", value=False, key="tab6_trend_detectie")
+    # AANGEPAST: Standaard aangevinkt (value=True)
+    alleen_detecties_trend = st.checkbox("Toon alleen aangetroffen stoffen (>RG)", value=True, key="tab6_trend_detectie")
 
 with col_trend_sel2:
     # Gebruik categories voor snelle lookup
@@ -112,24 +113,57 @@ if selected_meetpunten_trend:
         # Groupby op categories is heel snel
         df_grouped = df_trend.groupby(['Jaar', 'Stofgroep'], observed=True).size().reset_index(name='Aantal')
 
-        # Bereken percentages vectorized
-        totaal_per_jaar = df_grouped.groupby('Jaar')['Aantal'].transform('sum')
-        df_grouped['Percentage'] = (df_grouped['Aantal'] / totaal_per_jaar) * 100
+        # Bereken percentages vectorized (niet nodig voor pie, maar was in oude code)
+        # totaal_per_jaar = df_grouped.groupby('Jaar')['Aantal'].transform('sum')
+        # df_grouped['Percentage'] = (df_grouped['Aantal'] / totaal_per_jaar) * 100
 
         # Drop rows waar percentage 0 of NaN is (kan gebeuren door observed=True bij lege cats)
         df_grouped = df_grouped[df_grouped['Aantal'] > 0]
 
+        # --- NIEUW: Vervaang de staafgrafiek met taartdiagrammen per jaar ---
         if not df_grouped.empty:
-            fig_trend = px.bar(
-                df_grouped, x='Jaar', y='Percentage', color='Stofgroep',
-                title='Procentuele Verdeling (100% Gestapeld)',
-                barmode='stack'
-            )
-            fig_trend.update_layout(yaxis=dict(range=[0, 100], ticksuffix="%"))
-            fig_trend.update_xaxes(type='category') # Zorgt dat jaren als labels worden gezien
-            st.plotly_chart(fig_trend, use_container_width=True)
+            st.markdown("##### Procentuele Verdeling per Jaar (Aangetroffen stoffen)")
+            
+            jaren = sorted(df_grouped['Jaar'].unique())
+            num_jaren = len(jaren)
+            
+            # Gebruik maximaal 4 kolommen voor de layout
+            num_cols = min(num_jaren, 4) 
+            cols = st.columns(num_cols)
+            
+            # Plot de taartdiagrammen
+            for i, jaar in enumerate(jaren):
+                df_jaar = df_grouped[df_grouped['Jaar'] == jaar].copy()
+                
+                fig_pie = px.pie(
+                    df_jaar, 
+                    values='Aantal', 
+                    names='Stofgroep',
+                    title=f'Verdeling {jaar}', 
+                    hole=0.3
+                )
+                
+                # Toon percentages in de slices
+                # Toon de legenda alleen bij het eerste diagram (i == 0)
+                fig_pie.update_traces(
+                    textposition='inside', 
+                    textinfo='percent', 
+                    showlegend=True if i == 0 else False
+                )
+                
+                # Zorg ervoor dat Plotly Express de kleuren consistent houdt
+                
+                # Toon het diagram in de juiste kolom
+                with cols[i % num_cols]:
+                    st.plotly_chart(fig_pie, use_container_width=True)
+            
+            # Vang het geval op dat er meer dan 4 jaar zijn en de legenda niet duidelijk is
+            if num_jaren > 4:
+                 st.info("De kleuren zijn consistent over alle diagrammen; de legenda wordt alleen bij de eerste weergegeven.")
+
         else:
             st.info("Geen data na groepering.")
+        # -------------------------------------------------------------------
     else:
         st.info("Geen data gevonden voor deze selectie.")
 else:
@@ -172,9 +206,10 @@ if meetpunten_list:
         st.markdown(f"### 📋 Detailoverzicht per stofgroep: {selected_mp_herkomst}")
 
         # 1. Filteroptie: Alles of alleen detecties
+        # AANGEPAST: Standaard aangevinkt (value=True)
         show_only_detected = st.checkbox(
             "Toon in tabel alleen waarden boven rapportagegrens (>RG)",
-            value=False,
+            value=True,
             key="tab6_table_checkbox"
         )
 

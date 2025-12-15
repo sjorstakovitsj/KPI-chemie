@@ -37,7 +37,7 @@ with st.container():
     zomerhalfjaar = c_zomer.checkbox("Alleen zomerhalfjaar (apr-sep)", value=False)
     
     # AANGEPAST: Checkbox 2: Alleen detecties (>RG)
-    alleen_detecties = c_zomer.checkbox("Alleen aangetroffen waarden (>RG)", value=False)
+    alleen_detecties = c_zomer.checkbox("Alleen aangetroffen waarden (>RG)", value=True)
 
     start_date = c_start.date_input("Startdatum", value=min_d, min_value=min_d, max_value=max_d)
     end_date = c_end.date_input("Einddatum", value=max_d, min_value=min_d, max_value=max_d)
@@ -99,6 +99,10 @@ else:
     # Aggregaties voor plots (observed=True voor speed)
     time_agg = dff_final.groupby(['Datum', 'Meetpunt'], observed=True)['Waarde'].mean().reset_index()
     tijd_fig = px.line(time_agg, x="Datum", y="Waarde", color="Meetpunt", markers=True, title="Verloop in de tijd")
+    
+    # NIEUW: Zorg dat de x-as alleen hele jaartallen toont
+    tijd_fig.update_xaxes(dtick="M12", tickformat="%Y", ticklabelmode="period")
+    
     col_tijd.plotly_chart(tijd_fig, use_container_width=True)
 
     # Kaart data
