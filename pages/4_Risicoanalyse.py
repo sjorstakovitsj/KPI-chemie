@@ -155,7 +155,6 @@ if not df_risico.empty:
     # ---------------------------------------------------------
     # PRIORITEITENLIJST: TABEL VAN OVERTREDEN STOFFEN
     # ---------------------------------------------------------
-    st.markdown("---")
     st.subheader("Prioriteringslijst")
     st.markdown("Deze tabel toont welke stoffen de meeste overschrijdingen veroorzaken en hoe hoog de gemiddelde risico-intensiteit daarbij is.")
 
@@ -217,7 +216,8 @@ if not df_risico.empty:
 
     else:
         st.info("Geen overschrijdingen gevonden om een prioriteitenlijst te maken.")
-        
+
+    st.markdown("---")
 
     # ---------------------------------------------------------
     # SPIDER CHARTS
@@ -394,10 +394,12 @@ if not df_risico.empty:
             st.plotly_chart(fig_indiv, use_container_width=True)
     else:
         st.info("Onvoldoende data om een trendgrafiek van overschrijdingen te maken.")
+        
             
     # ---------------------------------------------
     # Actuele signaleringswaarde overschrijdingen
     # ---------------------------------------------
+    st.markdown("---")
     st.subheader("Actuele signaleringswaarde overschrijdingen")
             
     df_overtredingen = df_risico[df_risico['Boven_Signalering']].sort_values('Datum', ascending=False)

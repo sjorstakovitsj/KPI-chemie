@@ -16,6 +16,11 @@ STOFGROEPEN_MAPPING = {
         'trifluor', 'tridecafluor', '10:2', '8:2', '6:2', '4:2', '11-chlooreicosafluor-3-oxaundecaan-1-sulfonzuur',
         'som hexadecafluor-2-deceenzuur-isomerenâ'
     ],
+    'PAKs/PCBs/PBDEs': [
+        'naftaleen', 'antraceen', 'fenantreen', 'fluorantheen', 'benzo(a)', 'benzo(g', 'benzo(k',
+        'chryseen', 'pyreen', 'dibenzo', 'indeno', 'benzo(b)', 'pcb', 'broomdiphenylether',
+        'broomdifenylether', 'chloorbifenyl', 'acenaftyleen'
+    ],
     'Bestrijdingsmiddelen': [
         'glyfosaat', 'ampa', 'metolachloor', 'imidacloprid', 'mcpa', 'mecoprop', 'terbutylazine',
         'abamectine', 'aclonifen', 'alachloor', 'aldrin', 'endosulfan', 'hexachloor', 'atrazine',
@@ -48,11 +53,7 @@ STOFGROEPEN_MAPPING = {
         'guanylureum', 'avobenzone', 'octocrilene', 'paroxetine', 'fluoxetine', 'fenofibrinezuur',
         'gabapentine'
     ],
-    'PAKs/PCBs/PBDEs': [
-        'naftaleen', 'antraceen', 'fenantreen', 'fluorantheen', 'benzo(a)', 'benzo(g', 'benzo(k',
-        'chryseen', 'pyreen', 'dibenzo', 'indeno', 'benzo(b)', 'pcb', 'broomdiphenylether',
-        'broomdifenylether', 'chloorbifenyl', 'acenaftyleen'
-    ],
+
     'Vluchtige organische stoffen': [
         'benzeen', 'tolueen', 'etylbenzeen', 'xyleen', 'styreen', 'chloorbenzeen', 'chlooretheen',
         'dichloorethaan', 'dichloorpropeen', 'cumeen', 'cyclohexaan', 'methaan', 'dicyclopentadieen',
@@ -62,10 +63,10 @@ STOFGROEPEN_MAPPING = {
         'tetrachloorethaan'
     ],
     'Industrie & overigen': [
-        'bisfenol', 'chloorbenzeen', 'chloorfenol', 'nitrofenol', 'dtpa', 'methacrylaat', 'nta',
+        'bisfenol', 'chloorbenzeen', 'chloorfenol', 'nitrofenol', 'dtpa', 'methacrylaat', 'nitrilotriazijnzuur',
         'edta', 'pyrazol', 'melamine', 'difenol', 'cyaanguanidine', 'cyanuurzuur', 'urotropine',
-        'ftalaat', 'acesulfaam', 'cyclamaat', 'saccharine', 'sucralose', 'fosfaat', 'vinylchloride',
-        '4-tertiair-octylfenol', 'som 4-nonylfenol-isomeren (vertakt)', 'melamine'
+        'ftalaat', 'acesulfaam', 'cyclamaat', 'saccharine', 'sucralose', 'tributylfosfaat', 'vinylchloride',
+        '4-tertiair-octylfenol', 'som 4-nonylfenol-isomeren (vertakt)', 'melamine', 'trifenylfosfaat'
     ],
     'Nutriënten & algemeen': [
         'fluoride', 'zuurstof', 'chlorofyl', 'silicium', 'sulfaat', 'koolstof', 'stikstof',

@@ -1,6 +1,7 @@
 # Home.py
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 from utils import load_data, create_gauge, get_shared_sidebar
@@ -148,6 +149,167 @@ if len(available_years) >= 1:
     st.divider()
 
 # -----------------------------------------------------
+# NIEUWE SECTIE: Chemische Toestand & Bollenschema (Geavanceerd)
+# -----------------------------------------------------
+st.header("🔴 KRW-check: overschrijdende stoffen")
+st.info("Voor enkele stoffen is correctie met achtergrondwaardes van toepassing voor de KRW. In deze tool is dat niet meegenomen.")
+
+def calculate_compliance_details(df_in):
+    """
+    Berekent overschrijdingen inclusief overschrijdingsfactor.
+    """
+    required_cols = ['Meetpunt', 'Datum', 'Stof', 'Waarde', 'JG_MKN', 'MAC_MKN']
+    if not all(col in df_in.columns for col in required_cols):
+        return pd.DataFrame()
+
+    df_calc = df_in.copy()
+    df_calc['Jaar'] = df_calc['Datum'].dt.year
+
+    # --- STAP 1: JG Toetsing ---
+    if 'Limietsymbool' in df_calc.columns:
+        # Volgens verzoek: waarden zonder '<' symbool
+        df_jg_valid = df_calc[df_calc['Limietsymbool'] != '<'].copy()
+    else:
+        df_jg_valid = df_calc.copy()
+
+    jg_means = df_jg_valid.groupby(['Meetpunt', 'Jaar', 'Stof', 'JG_MKN'])['Waarde'].mean().reset_index()
+    jg_means.rename(columns={'Waarde': 'JaarGemiddelde'}, inplace=True)
+    
+    # Filter fouten en bereken factor
+    jg_failures = jg_means[jg_means['JaarGemiddelde'] > jg_means['JG_MKN']].copy()
+    jg_failures['Normtype'] = 'JG-MKN'
+    jg_failures['Factor'] = jg_failures['JaarGemiddelde'] / jg_failures['JG_MKN']
+
+    # --- STAP 2: MAC Toetsing ---
+    mac_maxs = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'MAC_MKN'])['Waarde'].max().reset_index()
+    mac_maxs.rename(columns={'Waarde': 'JaarMax'}, inplace=True)
+    
+    # Filter fouten en bereken factor
+    mac_failures = mac_maxs[mac_maxs['JaarMax'] > mac_maxs['MAC_MKN']].copy()
+    mac_failures['Normtype'] = 'MAC-MKN'
+    mac_failures['Factor'] = mac_failures['JaarMax'] / mac_failures['MAC_MKN']
+
+    # --- STAP 3: Samenvoegen ---
+    combined = pd.concat([
+        jg_failures[['Meetpunt', 'Jaar', 'Stof', 'Normtype', 'Factor']], 
+        mac_failures[['Meetpunt', 'Jaar', 'Stof', 'Normtype', 'Factor']]
+    ])
+    
+    return combined
+
+# Data ophalen
+df_failures = calculate_compliance_details(df_filtered)
+
+if df_failures.empty:
+    st.success("Geen normoverschrijdingen gevonden! 🎉")
+else:
+    meetpunten_met_fouten = sorted(df_failures['Meetpunt'].unique())
+    selected_mp = st.selectbox("Selecteer een meetpunt voor detailweergave:", meetpunten_met_fouten)
+    
+    # Filter op meetpunt
+    df_mp_fail = df_failures[df_failures['Meetpunt'] == selected_mp].copy()
+    
+    # --- LOGICA VOOR KLEUREN EN CATEGORIEËN ---
+    stof_summary = []
+    
+    for stof, group in df_mp_fail.groupby('Stof'):
+        types = group['Normtype'].unique()
+        max_factor = group['Factor'].max()
+        
+        # Categorie bepalen
+        if 'JG-MKN' in types and 'MAC-MKN' in types:
+            cat = "JG + MAC"
+            base_color_scale = 'Reds' # Rood voor dubbel falen
+        elif 'JG-MKN' in types:
+            cat = "JG (Gemiddelde)"
+            base_color_scale = 'Oranges' # Oranje voor chronisch
+        else:
+            cat = "MAC (Piek)"
+            base_color_scale = 'Purples' # Paars voor acuut
+            
+        # Kleurintensiteit bepalen: 1.0 = licht, 5.0+ = donkerst
+        # Normale factor tussen 0.0 en 1.0
+        norm_val = min((max_factor - 1) / 4, 1.0) 
+        # Start de schaal niet op wit (0.0), maar bij 0.3 zodat het altijd zichtbaar is
+        color_val = 0.3 + (norm_val * 0.7) 
+        
+        # Gebruik de kleurenfuncties van Plotly om de tint op te halen
+        hex_color = px.colors.sample_colorscale(base_color_scale, [color_val])[0]
+        
+        stof_summary.append({
+            'Stof': stof,
+            'Categorie': cat,
+            'Factor': max_factor,
+            'Color': hex_color
+        })
+        
+    df_viz = pd.DataFrame(stof_summary)
+    
+    # --- VISUALISATIE ---
+    col_graph, col_list = st.columns([1, 1])
+    
+    with col_graph:
+        # Sunburst constructie met go
+        ids = ["Totaal"] + df_viz['Stof'].tolist()
+        labels = ["Chemische<br>Toestand"] + df_viz['Stof'].tolist()
+        parents = [""] + ["Totaal"] * len(df_viz)
+        
+        # Kleurenlijst: Root is grijs, rest komt uit dataframe
+        colors = ["#DDDDDD"] + df_viz['Color'].tolist()
+        
+        # Hover info maken
+        hover_text = [""] + [f"Type: {row['Categorie']}<br>Max factor: {row['Factor']:.1f}x" for i, row in df_viz.iterrows()]
+
+        fig_sun = go.Figure(go.Sunburst(
+            ids=ids,
+            labels=labels,
+            parents=parents,
+            marker=dict(colors=colors),
+            hovertext=hover_text,
+            hoverinfo="label+text",
+            insidetextorientation='radial'
+        ))
+        
+        fig_sun.update_layout(
+            margin=dict(t=30, l=0, r=0, b=10),
+            title=f"Overschrijdingen: {selected_mp}",
+            height=500
+        )
+        
+        st.plotly_chart(fig_sun, use_container_width=True)
+        
+        # Legenda voor kleuren
+        st.caption("🎨 **Legenda:** 🟧 **Oranje** = JG-norm | 🟪 **Paars** = MAC-norm | 🟥 **Rood** = Beide. (Donkerder = hogere overschrijdingsfactor)")
+
+with col_list:
+        st.markdown(f"**Details ({selected_mp})**")
+        
+        # Sorteer de data
+        st_display = df_mp_fail[['Jaar', 'Stof', 'Normtype', 'Factor']].sort_values(by=['Factor', 'Stof', 'Jaar'], ascending=[False, True, False])
+        
+        # We gebruiken st.dataframe met column_config voor een native visualisatie
+        st.dataframe(
+            st_display,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Factor": st.column_config.ProgressColumn(
+                    "Factor (x norm)",     # Titel van de kolom
+                    format="%.1f x",       # Formaat (bijv 2.5 x)
+                    min_value=0,           # Minimum van de balk
+                    max_value=5,           # Maximum (alles daarboven is volle balk)
+                ),
+                "Jaar": st.column_config.NumberColumn(
+                    "Jaar",
+                    format="%d"            # Zorg dat jaar zonder komma wordt getoond
+                )
+            }
+        )
+        st.caption("De tabel toont de stoffen die gemiddeld (JG) per jaar of elke individuele (MAC) de norm overschrijden. Bij JG zijn metingen onder rapportagegrens buiten beschouwing gelaten.")
+
+st.divider()
+
+# -----------------------------------------------------
 
 st.header("📊 Overzicht toestand & kaart meetpunten")
 
@@ -241,8 +403,7 @@ with st.expander(f"Toon detailmeters voor alle {len(unieke_meetpunten)} meetpunt
         else:
             c2.info("Geen MAC data")
         
-        st.markdown("---")
-
+st.markdown("---")
 st.subheader("⚠️ Meest recente overschrijdingen")
 
 mask_jg_over = (df_filtered['Waarde'] > df_filtered['JG_MKN'])
@@ -263,3 +424,4 @@ if not df_violations.empty:
     )
 else:
     st.success("Geen overschrijdingen gevonden.")
+    
