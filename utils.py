@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 from datetime import datetime
 
 # --- CONSTANTEN ---
@@ -475,3 +476,210 @@ def calculate_trends_optimized(df_in: pd.DataFrame, lt_optie: str, norm_lookup_d
             })
 
     return pd.DataFrame(trend_results)
+
+def calculate_metrics(df_in: pd.DataFrame, is_period_average: bool = False):
+    """
+    Berekent metingen, overschrijdingen en percentage.
+    Verplaatst vanuit home.py voor schonere code.
+    """
+    if df_in.empty:
+        return 0, 0, 0.0
+    
+    # We werken op een kopie om warnings te voorkomen
+    df_calc = df_in.copy()
+    if 'Jaar' not in df_calc.columns:
+        df_calc['Jaar'] = df_calc['Datum'].dt.year
+    
+    unique_years = df_calc['Jaar'].nunique()
+
+    # Masker voor overschrijdingen (JG of MAC)
+    mask_jg_over = (df_calc['Waarde'] > df_calc['JG_MKN'])
+    mask_mac_over = (df_calc['Waarde'] > df_calc['MAC_MKN'])
+    
+    total_count = len(df_calc)
+    total_viol_count = (mask_jg_over | mask_mac_over).sum()
+    
+    if is_period_average and unique_years > 0:
+        avg_count = total_count / unique_years
+        avg_viol_count = total_viol_count / unique_years
+        pct_viol = (total_viol_count / total_count * 100)
+        return avg_count, avg_viol_count, pct_viol
+    else:
+        pct_viol = (total_viol_count / total_count * 100) if total_count > 0 else 0.0
+        return total_count, total_viol_count, pct_viol
+
+def calculate_compliance_details(df_in: pd.DataFrame) -> pd.DataFrame:
+    """
+    Berekent overschrijdingen inclusief overschrijdingsfactor.
+    Filtert waarden met een '<' limietsymbool eruit.
+    """
+    required_cols = ['Meetpunt', 'Datum', 'Stof', 'Waarde', 'JG_MKN', 'MAC_MKN']
+    if df_in.empty or not all(col in df_in.columns for col in required_cols):
+        return pd.DataFrame()
+
+    df_calc = df_in.copy()
+    
+    # Filter '<' waarden
+    if 'Limietsymbool' in df_calc.columns:
+        df_calc = df_calc[df_calc['Limietsymbool'] != '<']
+        
+    df_calc['Jaar'] = df_calc['Datum'].dt.year
+
+    # STAP 1: JG Toetsing (Jaargemiddelde)
+    jg_means = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'JG_MKN'])['Waarde'].mean().reset_index()
+    jg_failures = jg_means[jg_means['Waarde'] > jg_means['JG_MKN']].copy()
+    jg_failures['Normtype'] = 'JG-MKN'
+    jg_failures['Factor'] = jg_failures['Waarde'] / jg_failures['JG_MKN']
+
+    # STAP 2: MAC Toetsing (Maximaal)
+    mac_maxs = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'MAC_MKN'])['Waarde'].max().reset_index()
+    mac_failures = mac_maxs[mac_maxs['Waarde'] > mac_maxs['MAC_MKN']].copy()
+    mac_failures['Normtype'] = 'MAC-MKN'
+    mac_failures['Factor'] = mac_failures['Waarde'] / mac_failures['MAC_MKN']
+
+    # STAP 3: Samenvoegen
+    combined = pd.concat([
+        jg_failures[['Meetpunt', 'Jaar', 'Stof', 'Normtype', 'Factor']], 
+        mac_failures[['Meetpunt', 'Jaar', 'Stof', 'Normtype', 'Factor']]
+    ])
+    
+    return combined
+
+def prepare_heatmap_data(df_filtered: pd.DataFrame):
+    """
+    Verwerkt de gefilterde data tot matrices die direct in een Plotly Heatmap kunnen.
+    Geeft (factor_matrix, text_matrix, all_violating_stof, all_violating_meetpunt) terug.
+    """
+    # 1. Data Prep
+    df_source = df_filtered.copy()
+    if 'Limietsymbool' in df_source.columns:
+        df_source = df_source[df_source['Limietsymbool'] != '<']
+
+    if df_source.empty:
+        return None, None, [], []
+
+    if 'Jaar' not in df_source.columns:
+        df_source['Jaar'] = df_source['Datum'].dt.year
+
+    # 2. Factoren berekenen (Vectorized)
+    s_factor_jg = df_source['Waarde'].div(df_source['JG_MKN']).fillna(0)
+    s_factor_mac = df_source['Waarde'].div(df_source['MAC_MKN']).fillna(0)
+    
+    df_source['MaxFactor_Meting'] = np.maximum(s_factor_jg, s_factor_mac)
+    # Zet factoren <= 1.0 op 0.0 voor visualisatie
+    df_source.loc[df_source['MaxFactor_Meting'] <= 1.0, 'MaxFactor_Meting'] = 0.0
+
+    # 3. Status bepalen voor tekst
+    is_jg_over = (df_source['Waarde'] > df_source['JG_MKN']) & (df_source['JG_MKN'] > 0)
+    is_mac_over = (df_source['Waarde'] > df_source['MAC_MKN']) & (df_source['MAC_MKN'] > 0)
+
+    # Aggregatie naar jaar
+    df_annual = df_source.groupby(['Stof', 'Meetpunt', 'Jaar']).agg(
+        Fail_JG=('Waarde', lambda x: is_jg_over.loc[x.index].any()),
+        Fail_MAC=('Waarde', lambda x: is_mac_over.loc[x.index].any())
+    ).reset_index()
+    
+    # Cast naar bool voor zekerheid
+    df_annual['Fail_JG'] = df_annual['Fail_JG'].astype(bool)
+    df_annual['Fail_MAC'] = df_annual['Fail_MAC'].astype(bool)
+
+    # Status labels
+    conditions = [
+        (df_annual['Fail_JG'] & df_annual['Fail_MAC']),
+        (df_annual['Fail_JG']),
+        (df_annual['Fail_MAC'])
+    ]
+    choices = ['JG+MAC', 'JG', 'MAC']
+    df_annual['StatusType'] = np.select(conditions, choices, default='OK')
+
+    # Filter OK weg
+    df_annual_fails = df_annual[df_annual['StatusType'] != 'OK'].copy()
+
+    # 4. Tekst samenstellen (Jaren bundelen)
+    if df_annual_fails.empty:
+        return None, None, [], []
+
+    # Helper function inside scope usually fine, but vectorized is harder here. 
+    # Using simple group apply for text generation is acceptable given the volume reduction.
+    df_text_parts = df_annual_fails.groupby(['Stof', 'Meetpunt', 'StatusType'])['Jaar'].apply(
+        lambda x: ", ".join(map(str, sorted(x.dropna().astype(int).unique())))
+    ).reset_index(name='JarenStr')
+
+    df_text_parts['FullText'] = df_text_parts['StatusType'] + " (" + df_text_parts['JarenStr'] + ")"
+    
+    # Sortering status
+    status_order = pd.CategoricalDtype(['JG', 'MAC', 'JG+MAC'], ordered=True)
+    df_text_parts['StatusType'] = df_text_parts['StatusType'].astype(status_order)
+    df_text_parts = df_text_parts.sort_values(['Stof', 'Meetpunt', 'StatusType'])
+
+    df_viz_text = df_text_parts.groupby(['Stof', 'Meetpunt'])['FullText'].apply(
+        lambda x: '<br>'.join(x.dropna().astype(str))
+    ).reset_index(name='CellText')
+
+    # 5. Max factor per cel bepalen
+    df_viz_factor = df_source.groupby(['Stof', 'Meetpunt'])['MaxFactor_Meting'].max().reset_index(name='MaxFactor')
+
+    # 6. Combineren
+    violating_keys = df_viz_factor[df_viz_factor['MaxFactor'] > 1.0][['Stof', 'Meetpunt']]
+    if violating_keys.empty:
+        return None, None, [], []
+
+    all_violating_stof = sorted(violating_keys['Stof'].unique())
+    all_violating_meetpunt = sorted(violating_keys['Meetpunt'].unique())
+
+    df_viz_heatmap = pd.merge(df_viz_factor, df_viz_text, on=['Stof', 'Meetpunt'], how='left')
+    df_viz_heatmap['CellText'] = df_viz_heatmap['CellText'].fillna(' ')
+    df_viz_heatmap['MaxFactor'] = df_viz_heatmap['MaxFactor'].fillna(0.0)
+    
+    # Opschonen grijze cellen
+    df_viz_heatmap.loc[df_viz_heatmap['MaxFactor'] <= 1.0, 'CellText'] = ' '
+
+    # 7. Pivot
+    df_final = df_viz_heatmap[
+        df_viz_heatmap['Stof'].isin(all_violating_stof) & 
+        df_viz_heatmap['Meetpunt'].isin(all_violating_meetpunt)
+    ]
+
+    factor_matrix = df_final.pivot(index='Stof', columns='Meetpunt', values='MaxFactor')
+    text_matrix = df_final.pivot(index='Stof', columns='Meetpunt', values='CellText')
+
+    # Reindex
+    factor_matrix = factor_matrix.reindex(index=all_violating_stof, columns=all_violating_meetpunt).fillna(0.0)
+    text_matrix = text_matrix.reindex(index=all_violating_stof, columns=all_violating_meetpunt).fillna(' ')
+
+    return factor_matrix, text_matrix, all_violating_stof, all_violating_meetpunt
+
+def prepare_sunburst_data(df_mp_fail):
+    """
+    Bereidt de data en kleuren voor de Sunburst chart voor.
+    """
+    stof_summary = []
+    
+    for stof, group in df_mp_fail.groupby('Stof'):
+        types = group['Normtype'].unique()
+        max_factor = group['Factor'].max()
+        
+        # Categorie & Kleurschaal
+        if 'JG-MKN' in types and 'MAC-MKN' in types:
+            cat = "JG + MAC"
+            base_color_scale = 'Reds'
+        elif 'JG-MKN' in types:
+            cat = "JG (Gemiddelde)"
+            base_color_scale = 'Oranges'
+        else:
+            cat = "MAC (Piek)"
+            base_color_scale = 'Purples'
+            
+        # Kleurintensiteit
+        norm_val = min((max_factor - 1) / 4, 1.0) 
+        color_val = 0.3 + (norm_val * 0.7) 
+        hex_color = px.colors.sample_colorscale(base_color_scale, [color_val])[0]
+        
+        stof_summary.append({
+            'Stof': stof,
+            'Categorie': cat,
+            'Factor': max_factor,
+            'Color': hex_color
+        })
+        
+    return pd.DataFrame(stof_summary)

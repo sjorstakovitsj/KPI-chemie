@@ -4,63 +4,27 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from utils import load_data, create_gauge, get_shared_sidebar
+# Importeer de nieuwe functies
+from utils import (
+    load_data, create_gauge, get_shared_sidebar, 
+    calculate_metrics, calculate_compliance_details, 
+    prepare_heatmap_data, prepare_sunburst_data
+)
 
-# Configuratie moet als aller-allereerste
 st.set_page_config(layout="wide", page_title="Waterkwaliteit KPI Dashboard", page_icon="💧")
-
 st.title("💧 Dashboard chemische waterkwaliteit MN")
 
-# Data laden (gecached)
+# 1. Data Laden
 df_main = load_data()
 
 if df_main.empty:
-    st.error("🚨 Kritieke fout: de geladen en opgeschoonde data is leeg.")
+    st.error("🚨 Kritieke fout: de geladen data is leeg.")
     st.stop()
 
-# Sidebar aanroepen en gefilterde data ophalen
+# 2. Sidebar & Filteren
 df_filtered = get_shared_sidebar(df_main)
 
-
-# Hulpfunctie om de KPI's voor een dataframe te berekenen
-def calculate_metrics(df_in: pd.DataFrame, is_period_average: bool = False):
-    """
-    Berekent metingen, overschrijdingen en percentage.
-    Indien is_period_average=True, berekent het gemiddelde per jaar in de periode.
-    """
-    if df_in.empty:
-        return 0, 0, 0.0
-    
-    # Voeg jaar toe voor groepering
-    df_in['Jaar'] = df_in['Datum'].dt.year
-    
-    # Bepaal het aantal unieke jaren
-    unique_years = df_in['Jaar'].nunique()
-
-    # Masker voor overschrijdingen (JG of MAC)
-    mask_jg_over = (df_in['Waarde'] > df_in['JG_MKN'])
-    mask_mac_over = (df_in['Waarde'] > df_in['MAC_MKN'])
-    
-    # Totaal over de (gehele of enkel) dataset
-    total_count = len(df_in)
-    total_viol_count = (mask_jg_over | mask_mac_over).sum()
-    
-    if is_period_average and unique_years > 0:
-        # Als het een periode is, bereken de gemiddelden per jaar
-        avg_count = total_count / unique_years
-        avg_viol_count = total_viol_count / unique_years
-        
-        # Het percentage wordt over de totale periode berekend voor stabiliteit
-        pct_viol = (total_viol_count / total_count * 100)
-        
-        return avg_count, avg_viol_count, pct_viol
-    else:
-        # Huidig jaar (of een enkel vergelijkingsjaar)
-        pct_viol = (total_viol_count / total_count * 100) if total_count > 0 else 0.0
-        return total_count, total_viol_count, pct_viol
-
-
-# --- DYNAMISCHE SCOREKAART: Recent vs Selectie ---
+# 3. Dynamische Scorekaart: Recent vs Selectie
 available_years = sorted(df_filtered['Datum'].dt.year.unique(), reverse=True)
 
 if len(available_years) >= 1:
@@ -69,566 +33,191 @@ if len(available_years) >= 1:
     
     st.subheader(f"Vergelijking huidig jaar ten opzichte van voorgaande jaren: **{current_year}**")
 
-    # 1. Bepaal vergelijkingsopties
+    # Opties opbouwen
     comparison_options = {}
-    
-    # Opties voor individuele voorgaande jaren
     for year in available_years[1:]:
         comparison_options[f"voorgaand jaar: {year}"] = {'years': [year], 'is_period': False}
 
-    # Optie voor alle voorgaande jaren als periode (alleen als er > 1 jaar beschikbaar is)
     if len(available_years) > 1:
         prev_years = available_years[1:]
-        start_year = prev_years[-1]
-        end_year = prev_years[0]
-        # Als er meer dan één voorgaand jaar is, markeer het als periode
         is_multi_year = len(prev_years) > 1
-        comparison_options[f"Periode: {start_year} t/m {end_year} (gemiddeld)"] = {'years': prev_years, 'is_period': is_multi_year}
+        comparison_options[f"Periode: {prev_years[-1]} t/m {prev_years[0]} (gemiddeld)"] = {'years': prev_years, 'is_period': is_multi_year}
         
     if not comparison_options:
         st.info("Niet genoeg historische data (minimaal 2 jaar) om te vergelijken.")
     else:
-        # 2. Selectbox
-        # Zet de periode-optie standaard bovenaan als deze bestaat
+        # UI Selectie
         default_index = 0
         keys = list(comparison_options.keys())
-        if keys[0].startswith("Periode:"):
-             default_index = 0 # Standaard de periode tonen
-
-        selected_option = st.selectbox(
-            f"Selecteer het jaar of de periode om **{current_year}** mee te vergelijken:",
-            options=keys,
-            index=default_index
-        )
+        if keys[0].startswith("Periode:"): default_index = 0
+        selected_option = st.selectbox(f"Selecteer vergelijking voor **{current_year}**:", options=keys, index=default_index)
         
-        # 3. Data voor vergelijking ophalen
+        # Data ophalen
         comp_info = comparison_options[selected_option]
-        comparison_years = comp_info['years']
-        is_period_comparison = comp_info['is_period']
-        
-        df_comp = df_filtered[df_filtered['Datum'].dt.year.isin(comparison_years)].copy()
+        df_comp = df_filtered[df_filtered['Datum'].dt.year.isin(comp_info['years'])].copy()
     
-        # 4. Berekeningen uitvoeren
-        # Huidige jaar (geen gemiddelde)
+        # Berekeningen (via Utils)
         count_curr, viol_curr, pct_curr = calculate_metrics(df_curr, is_period_average=False)
+        comp_count, comp_viol, comp_pct = calculate_metrics(df_comp, is_period_average=comp_info['is_period'])
         
-        # Vergelijking (wel of geen gemiddelde)
-        comp_count, comp_viol, comp_pct = calculate_metrics(df_comp, is_period_average=is_period_comparison)
-            
-        # 5. Delta's berekenen
-        delta_count = count_curr - comp_count
-        delta_viol = viol_curr - comp_viol
-        delta_pct = pct_curr - comp_pct
-    
-        # 6. Metrics tonen
-        col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
+        # Metrics Tonen
+        col1, col2, col3 = st.columns(3)
+        lbl_avg = "gemiddeld" if comp_info['is_period'] else ""
         
-        # Pas de labels aan om duidelijk te maken wat er vergeleken wordt
-        comp_label = "gemiddeld" if is_period_comparison else ""
-        
-        col_kpi1.metric(
-            label=f"Aantal metingen{comp_label}", 
-            value=f"{count_curr:.0f} (vs: {comp_count:.0f})", 
-            delta=f"{delta_count:.0f}"
-        )
-        
-        col_kpi2.metric(
-            label=f"Aantal overschrijdingen {comp_label}", 
-            value=f"{viol_curr:.0f} (vs: {comp_viol:.0f})", 
-            delta=f"{delta_viol:.0f}",
-            delta_color="inverse" # Rood als het stijgt (slecht), groen als het daalt
-        )
-        
-        col_kpi3.metric(
-            label=f"Percentage normoverschrijdingen {comp_label}",
-            value=f"{pct_curr:.1f}% (vs: {comp_pct:.1f}%)",
-            delta=f"{delta_pct:.1f}%",
-            delta_color="inverse"
-        )
+        col1.metric("Aantal metingen " + lbl_avg, f"{count_curr:.0f}", f"{count_curr - comp_count:.0f}")
+        col2.metric("Aantal overschrijdingen " + lbl_avg, f"{viol_curr:.0f}", f"{viol_curr - comp_viol:.0f}", delta_color="inverse")
+        col3.metric("Percentage normoverschrijdingen " + lbl_avg, f"{pct_curr:.1f}%", f"{pct_curr - comp_pct:.1f}%", delta_color="inverse")
     
     st.divider()
 
-# -----------------------------------------------------
-# NIEUWE SECTIE: Chemische Toestand & Bollenschema (Geavanceerd)
-# -----------------------------------------------------
+# 4. KRW-check & Heatmap
 st.header("🔴 KRW-check: overschrijdende stoffen")
-st.info("Voor enkele stoffen is correctie met achtergrondwaardes van toepassing voor de KRW. De achtergrondwaarde correctie is niet meegenomen in dit dashboard.")
+st.info("Achtergrondwaarde correctie is niet meegenomen in dit dashboard.")
 
-def calculate_compliance_details(df_in):
-    """
-    Berekent overschrijdingen inclusief overschrijdingsfactor.
-    Filtert waarden met een '<' limietsymbool eruit (enkel aangetroffen waarden).
-    """
-    required_cols = ['Meetpunt', 'Datum', 'Stof', 'Waarde', 'JG_MKN', 'MAC_MKN']
-    if not all(col in df_in.columns for col in required_cols):
-        return pd.DataFrame()
-
-    df_calc = df_in.copy()
-    
-    # --- NIEUW: Globaal filter voor deze functie ---
-    # Als Limietsymbool bestaat, filter alles weg met '<'
-    if 'Limietsymbool' in df_calc.columns:
-        df_calc = df_calc[df_calc['Limietsymbool'] != '<']
-        
-    df_calc['Jaar'] = df_calc['Datum'].dt.year
-
-    # --- STAP 1: JG Toetsing ---
-    # We gebruiken nu df_calc die al gefilterd is
-    jg_means = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'JG_MKN'])['Waarde'].mean().reset_index()
-    jg_means.rename(columns={'Waarde': 'JaarGemiddelde'}, inplace=True)
-    
-    # Filter fouten en bereken factor
-    jg_failures = jg_means[jg_means['JaarGemiddelde'] > jg_means['JG_MKN']].copy()
-    jg_failures['Normtype'] = 'JG-MKN'
-    jg_failures['Factor'] = jg_failures['JaarGemiddelde'] / jg_failures['JG_MKN']
-
-    # --- STAP 2: MAC Toetsing ---
-    # Ook hier gebruiken we nu de gefilterde df_calc
-    mac_maxs = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'MAC_MKN'])['Waarde'].max().reset_index()
-    mac_maxs.rename(columns={'Waarde': 'JaarMax'}, inplace=True)
-    
-    # Filter fouten en bereken factor
-    mac_failures = mac_maxs[mac_maxs['JaarMax'] > mac_maxs['MAC_MKN']].copy()
-    mac_failures['Normtype'] = 'MAC-MKN'
-    mac_failures['Factor'] = mac_failures['JaarMax'] / mac_failures['MAC_MKN']
-
-    # --- STAP 3: Samenvoegen ---
-    combined = pd.concat([
-        jg_failures[['Meetpunt', 'Jaar', 'Stof', 'Normtype', 'Factor']], 
-        mac_failures[['Meetpunt', 'Jaar', 'Stof', 'Normtype', 'Factor']]
-    ])
-    
-    return combined
-
-# Data ophalen
-df_failures = calculate_compliance_details(df_filtered)
-
-# Data ophalen (hierin zijn < waarden al gefilterd door jouw vorige aanpassing)
+# Compliance data berekenen (via Utils)
 df_failures = calculate_compliance_details(df_filtered)
 
 if df_failures.empty:
     st.success("Geen normoverschrijdingen gevonden! 🎉")
 else:
-# ---------------------------------------------------------
-# Heatmap Matrix (Stoffen vs Meetpunten)
-# ---------------------------------------------------------
-    st.subheader("🧩 Matrix: Overschrijdingsfactoren en Jaarlijkse Normstatus")
-
-    # *** BELANGRIJKE FIX: Voeg de Jaar kolom toe aan df_filtered ***
-    if 'Jaar' not in df_filtered.columns:
-        # Zorg dat Jaar een integer is
-        df_filtered['Jaar'] = df_filtered['Datum'].dt.year.astype('Int64', errors='ignore') 
-
-    # --- STAP 1: Voorbereiding van data voor jaarlijkse status en maximale factor ---
+    st.subheader("🧩 Heatmap overschrijdingsfactoren")
     
-    # Bepaal overschrijdingsstatus per meting (per rij in df_filtered)
-    df_filtered['Overschreiding_JG'] = df_filtered['Waarde'] > df_filtered['JG_MKN']
-    df_filtered['Overschreiding_MAC'] = df_filtered['Waarde'] > df_filtered['MAC_MKN']
+    # Heatmap data voorbereiden (ZWARE LOGICA NU IN UTILS)
+    factor_matrix, text_matrix, viol_stof, viol_mp = prepare_heatmap_data(df_filtered)
     
-    # Functie om de Max Factor te berekenen (indien > 1.0, anders 0.0)
-    def calculate_max_factor(row):
-        factors = []
-        if row['JG_MKN'] > 0 and pd.notna(row['Waarde']) and pd.notna(row['JG_MKN']):
-            factors.append(row['Waarde'] / row['JG_MKN'])
-        if row['MAC_MKN'] > 0 and pd.notna(row['Waarde']) and pd.notna(row['MAC_MKN']):
-            factors.append(row['Waarde'] / row['MAC_MKN'])
-        
-        max_f = max(factors) if factors else 0.0
-        return max_f if max_f > 1.0 else 0.0
-
-    df_filtered['MaxFactor_Meting'] = df_filtered.apply(calculate_max_factor, axis=1)
-    
-    # --- STAP 2: Bepaal de jaarlijkse overschrijdingsstatus en genereer de STATUS TYPE ---
-    
-    # Aggregeer per Stof, Meetpunt, en Jaar
-    df_annual_status = df_filtered.groupby(['Stof', 'Meetpunt', 'Jaar']).agg(
-        JaarlijkseOverschreiding_JG=('Overschreiding_JG', 'any'), 
-        JaarlijkseOverschreiding_MAC=('Overschreiding_MAC', 'any'),
-    ).reset_index()
-
-    # Creëer de Status Type string per jaar
-    def get_status_type(row):
-        is_jg = row['JaarlijkseOverschreiding_JG']
-        is_mac = row['JaarlijkseOverschreiding_MAC']
-        
-        if is_jg and is_mac:
-            return "JG+MAC"
-        elif is_jg:
-            return "JG"
-        elif is_mac:
-            return "MAC"
-        else:
-            return "n.v.t."
-
-    df_annual_status['StatusType'] = df_annual_status.apply(get_status_type, axis=1)
-
-    # Aggregeer nu per StatusType om de jaren te combineren
-    df_annual_agg = df_annual_status.groupby(['Stof', 'Meetpunt', 'StatusType'])['Jaar'].agg(
-        lambda x: sorted(list(x.unique()))
-    ).reset_index(name='Jaren')
-
-    # Filter de 'n.v.t.' status uit.
-    df_viz_agg = df_annual_agg[df_annual_agg['StatusType'] != 'n.v.t.'].copy()
-
-    # Creëer de definitieve tekst: Status (2022, 2024)
-    def create_cell_text(row):
-        jaren_data = row['Jaren']
-        
-        # Robust check for scalar instead of list
-        if isinstance(jaren_data, (int, float)):
-            jaren_data = [jaren_data]
-            
-        jaren_str = ", ".join(map(lambda x: str(int(x)) if pd.notna(x) else "", jaren_data))
-        
-        # FIX: Als de jaren_str leeg is, retourneer dan de volledig lege string
-        if not jaren_str:
-             return "" 
-        
-        return f"{row['StatusType']} ({jaren_str})"
-
-    # Pas de functie alleen toe op de overschrijdingsrijen
-    if not df_viz_agg.empty:
-        df_viz_agg['AnnualText'] = df_viz_agg.apply(create_cell_text, axis=1)
-        df_viz_agg = df_viz_agg[df_viz_agg['AnnualText'] != ""]
+    if factor_matrix is None:
+         st.info("Geen data beschikbaar na filtering.")
     else:
-        df_viz_agg['AnnualText'] = ''
-
-    # Combineer de teksten voor de cel (gesorteerd op StatusType)
-    status_order = ['JG', 'MAC', 'JG+MAC'] 
-    df_viz_agg['StatusOrder'] = pd.Categorical(df_viz_agg['StatusType'], categories=status_order, ordered=True)
-    df_viz_agg = df_viz_agg.sort_values(by=['Stof', 'Meetpunt', 'StatusOrder'])
-
-    df_viz_text = df_viz_agg.groupby(['Stof', 'Meetpunt'])['AnnualText'].apply(
-        lambda x: '<br>'.join(x) # Gebruik <br> voor nieuwe regel in Plotly
-    ).reset_index(name='CellText')
-
-    # --- STAP 3: Bepaal de definitieve Max Factor (over de hele periode) ---
-    
-    df_viz_factor = df_filtered.groupby(['Stof', 'Meetpunt'])['MaxFactor_Meting'].max().reset_index(name='MaxFactor')
-    
-    # --- STAP 4: Combineer en Pivot voor Plotly (met filter) ---
-
-    # 1. Bepaal de overschrijdende stoffen (Rijen)
-    violating_substances = df_viz_factor[df_viz_factor['MaxFactor'] > 1.0]['Stof'].unique()
-    all_violating_stof = sorted(violating_substances)
-    
-    # 2. Bepaal de overschrijdende meetpunten (Kolommen)
-    # NIEUWE LOGICA: Filter Meetpunten die minimaal één overschrijding hebben.
-    violating_meetpunten = df_viz_factor[df_viz_factor['MaxFactor'] > 1.0]['Meetpunt'].unique()
-    all_meetpunt = sorted(violating_meetpunten)
-
-
-    if not all_violating_stof:
-        # Als er geen overtredende stoffen zijn, zijn er ook geen overtredende meetpunten
-        st.info("Geen normoverschrijdende stoffen gevonden in de geselecteerde periode om in de heatmap te tonen.")
-    else:
-        # Merge MaxFactor (compleet) met CellText (alleen bij overschrijding)
-        df_viz_heatmap = pd.merge(df_viz_factor, df_viz_text, on=['Stof', 'Meetpunt'], how='left')
-
-        # Vul NaN MaxFactor (geen metingen) met 0.0
-        df_viz_heatmap['MaxFactor'] = df_viz_heatmap['MaxFactor'].fillna(0.0)
-        
-        # 1. Vul CellText NaN met een lege string.
-        df_viz_heatmap['CellText'] = df_viz_heatmap['CellText'].fillna(' ')
-        
-        # 2. Overschrijf de CellText met een lege string als de MaxFactor <= 1.0 (Grijze cellen)
-        df_viz_heatmap.loc[df_viz_heatmap['MaxFactor'] <= 1.0, 'CellText'] = ' ' 
-
-        # Filter de heatmap data om alleen de overtredende stoffen en meetpunten te bevatten
-        df_viz_heatmap_filtered = df_viz_heatmap[
-            df_viz_heatmap['Stof'].isin(all_violating_stof) & 
-            df_viz_heatmap['Meetpunt'].isin(all_meetpunt)
-        ]
-
-        # Pivot the Factor Matrix (Z-waarden)
-        factor_matrix = df_viz_heatmap_filtered.pivot_table(index='Stof', columns='Meetpunt', values='MaxFactor', fill_value=0.0)
-        factor_matrix = factor_matrix.reindex(index=all_violating_stof, columns=all_meetpunt).fillna(0.0) 
-
-        # Pivot the Text Matrix
-        text_matrix = df_viz_heatmap_filtered.pivot_table(
-            index='Stof', 
-            columns='Meetpunt', 
-            values='CellText', 
-            fill_value=' ', 
-            aggfunc='first'
-        )
-        text_matrix = text_matrix.reindex(index=all_violating_stof, columns=all_meetpunt).fillna(' ') 
-
-        # --- STAP 5: Plotting met Custom Kleurschaal voor Grijs (0.0 tot 1.0) ---
-
-        Z_MAX = factor_matrix.max().max() if not factor_matrix.empty and factor_matrix.max().max() > 1.0 else 2.0
+        # Plotting Logic (Blijft in Home want dit is View)
+        Z_MAX = factor_matrix.max().max() if factor_matrix.max().max() > 1.0 else 2.0
         split_frac = 1.0 / Z_MAX
-        
-        GRAY = 'rgb(200, 200, 200)'        
-        YlOrRd_START = 'rgb(255, 235, 130)' 
-        YlOrRd_END = 'rgb(189, 0, 38)'     
-
-        custom_colorscale = [
-            [0.0, GRAY],
-            [split_frac, GRAY], 
-            [split_frac, YlOrRd_START], 
-            [1.0, YlOrRd_END]
-        ]
+        custom_colorscale = [[0.0, 'rgb(220, 220, 220)'], [split_frac, 'rgb(220, 220, 220)'], [split_frac, 'rgb(255, 235, 130)'], [1.0, 'rgb(189, 0, 38)']]
 
         fig_heatmap = go.Figure(data=[
             go.Heatmap(
-                z=factor_matrix.values,
-                x=factor_matrix.columns,
-                y=factor_matrix.index,
-                text=text_matrix.values,         
-                texttemplate="%{text}",           
-                textfont={"size": 9},             
-                
-                colorscale=custom_colorscale,     
-                zmin=0.0,                         
-                zmax=Z_MAX,
-                
-                colorbar=dict(title="Factor (x)"),
-                hovertemplate="Meetpunt: %{x}<br>Stof: %{y}<br>Max Factor: %{z:.1f}x<br>Jaarlijkse Status:<br>%{text}<extra></extra>",
-                
-                xgap=2, 
-                ygap=2  
+                z=factor_matrix.values, x=factor_matrix.columns, y=factor_matrix.index,
+                text=text_matrix.values, texttemplate="%{text}", textfont={"size": 10},
+                colorscale=custom_colorscale, zmin=0.0, zmax=Z_MAX,
+                hovertemplate="<b>%{x}</b><br>%{y}<br>Max Factor: %{z:.1f}x<br><br>Status:<br>%{text}<extra></extra>",
+                xgap=1, ygap=1
             )
         ])
-
-        # 6. Layout updates
         fig_heatmap.update_layout(
-            height=800, 
-            xaxis=dict(title="Meetpunt", tickmode='array', tickvals=factor_matrix.columns),
-            yaxis=dict(title="Stof", autorange="reversed"), 
-            title='Heatmap: overschrijdende stoffen per meetpunt en meetjaar',
+            height=max(400, len(viol_stof) * 30 + 150),
+            xaxis=dict(title="Meetpunt", tickangle=-45), yaxis=dict(title="Stof", autorange="reversed"),
             margin=dict(l=0, r=0, t=50, b=0)
         )
-
         st.plotly_chart(fig_heatmap, use_container_width=True)
-        st.caption("Grijze cellen geven aan dat er geen overschrijding is waargenomen en bevatten **geen tekst**. De kleur schaal (geel-rood) begint pas bij een normoverschrijdingsfactor van 1.0. De tekst in de cel toont het type normoverschrijding per jaar, geaggregeerd per normtype (bijv. JG (2022, 2024)).")
+        st.caption("Grijze cellen = geen overschrijding.")
     
     st.divider()
 
-
-if df_failures.empty:
-    st.success("Geen normoverschrijdingen gevonden! 🎉")
-else:
+    # Detailweergave & Sunburst
     meetpunten_met_fouten = sorted(df_failures['Meetpunt'].unique())
     selected_mp = st.selectbox("Selecteer een meetpunt voor detailweergave:", meetpunten_met_fouten)
     
-    # Filter op meetpunt
     df_mp_fail = df_failures[df_failures['Meetpunt'] == selected_mp].copy()
     
-    # --- LOGICA VOOR KLEUREN EN CATEGORIEËN ---
-    stof_summary = []
+    # Data voorbereiden voor Sunburst (via Utils)
+    df_viz = prepare_sunburst_data(df_mp_fail)
     
-    for stof, group in df_mp_fail.groupby('Stof'):
-        types = group['Normtype'].unique()
-        max_factor = group['Factor'].max()
-        
-        # Categorie bepalen
-        if 'JG-MKN' in types and 'MAC-MKN' in types:
-            cat = "JG + MAC"
-            base_color_scale = 'Reds' # Rood voor dubbel falen
-        elif 'JG-MKN' in types:
-            cat = "JG (Gemiddelde)"
-            base_color_scale = 'Oranges' # Oranje voor chronisch
-        else:
-            cat = "MAC (Piek)"
-            base_color_scale = 'Purples' # Paars voor acuut
-            
-        # Kleurintensiteit bepalen: 1.0 = licht, 5.0+ = donkerst
-        # Normale factor tussen 0.0 en 1.0
-        norm_val = min((max_factor - 1) / 4, 1.0) 
-        # Start de schaal niet op wit (0.0), maar bij 0.3 zodat het altijd zichtbaar is
-        color_val = 0.3 + (norm_val * 0.7) 
-        
-        # Gebruik de kleurenfuncties van Plotly om de tint op te halen
-        hex_color = px.colors.sample_colorscale(base_color_scale, [color_val])[0]
-        
-        stof_summary.append({
-            'Stof': stof,
-            'Categorie': cat,
-            'Factor': max_factor,
-            'Color': hex_color
-        })
-        
-    df_viz = pd.DataFrame(stof_summary)
-    
-    # --- VISUALISATIE ---
     col_graph, col_list = st.columns([1, 1])
-    
     with col_graph:
-        # Sunburst constructie met go
-        ids = ["Totaal"] + df_viz['Stof'].tolist()
-        labels = ["Chemische<br>Toestand"] + df_viz['Stof'].tolist()
-        parents = [""] + ["Totaal"] * len(df_viz)
-        
-        # Kleurenlijst: Root is grijs, rest komt uit dataframe
-        colors = ["#DDDDDD"] + df_viz['Color'].tolist()
-        
-        # Hover info maken
-        hover_text = [""] + [f"Type: {row['Categorie']}<br>Max factor: {row['Factor']:.1f}x" for i, row in df_viz.iterrows()]
-
         fig_sun = go.Figure(go.Sunburst(
-            ids=ids,
-            labels=labels,
-            parents=parents,
-            marker=dict(colors=colors),
-            hovertext=hover_text,
-            hoverinfo="label+text",
-            insidetextorientation='radial'
+            ids=["Totaal"] + df_viz['Stof'].tolist(),
+            labels=["Chemische<br>Toestand"] + df_viz['Stof'].tolist(),
+            parents=[""] + ["Totaal"] * len(df_viz),
+            marker=dict(colors=["#DDDDDD"] + df_viz['Color'].tolist()),
+            hovertext=[""] + [f"Type: {r['Categorie']}<br>Factor: {r['Factor']:.1f}x" for i, r in df_viz.iterrows()],
+            hoverinfo="label+text"
         ))
-        
-        fig_sun.update_layout(
-            margin=dict(t=30, l=0, r=0, b=10),
-            title=f"Overschrijdingen: {selected_mp}",
-            height=500
-        )
-        
+        fig_sun.update_layout(margin=dict(t=30, l=0, r=0, b=10), title=f"Overschrijdingen: {selected_mp}", height=500)
         st.plotly_chart(fig_sun, use_container_width=True)
-        
-        # Legenda voor kleuren
-        st.caption("🎨 **Legenda:** 🟧 **Oranje** = JG-norm | 🟪 **Paars** = MAC-norm | 🟥 **Rood** = Beide. (Donkerder = hogere overschrijdingsfactor)")
 
-with col_list:
+    with col_list:
         st.markdown(f"**Details ({selected_mp})**")
-        
-        # Sorteer de data
         st_display = df_mp_fail[['Jaar', 'Stof', 'Normtype', 'Factor']].sort_values(by=['Factor', 'Stof', 'Jaar'], ascending=[False, True, False])
-        
-        # We gebruiken st.dataframe met column_config voor een native visualisatie
         st.dataframe(
-            st_display,
-            use_container_width=True,
-            hide_index=True,
+            st_display, use_container_width=True, hide_index=True,
             column_config={
-                "Factor": st.column_config.ProgressColumn(
-                    "Factor (x norm)",     # Titel van de kolom
-                    format="%.1f x",       # Formaat (bijv 2.5 x)
-                    min_value=0,           # Minimum van de balk
-                    max_value=5,           # Maximum (alles daarboven is volle balk)
-                ),
-                "Jaar": st.column_config.NumberColumn(
-                    "Jaar",
-                    format="%d"            # Zorg dat jaar zonder komma wordt getoond
-                )
+                "Factor": st.column_config.ProgressColumn("Factor (x norm)", format="%.1f x", min_value=0, max_value=5),
+                "Jaar": st.column_config.NumberColumn("Jaar", format="%d")
             }
         )
-        st.caption("De tabel toont de stoffen die gemiddeld (JG) per jaar of elke individuele (MAC) de norm overschrijden. Bij JG zijn metingen onder rapportagegrens buiten beschouwing gelaten.")
 
 st.divider()
 
-# -----------------------------------------------------
-
+# 5. Overzicht toestand & kaart
 st.header("📊 Overzicht toestand & kaart meetpunten")
 
-# Berekeningen over totale gefilterde set
-col_kpi_info, col_kpi_gauges, col_map = st.columns([1, 2, 2])
+# Bereken totalen voor gauges
+df_mac_ov = df_filtered.dropna(subset=['MAC_MKN'])
+if 'Limietsymbool' in df_mac_ov.columns: df_mac_ov = df_mac_ov[df_mac_ov['Limietsymbool'] != '<']
 
-# --- 1. MAC Overall (gefilterd op <) ---
-df_mac_overall = df_filtered.dropna(subset=['MAC_MKN'])
-if 'Limietsymbool' in df_mac_overall.columns:
-    df_mac_overall = df_mac_overall[df_mac_overall['Limietsymbool'] != '<']
+df_jg_ov = df_filtered.dropna(subset=['JG_MKN'])
+if 'Limietsymbool' in df_jg_ov.columns: df_jg_ov = df_jg_ov[df_jg_ov['Limietsymbool'] != '<']
 
-pct_mac_total = 0
-if not df_mac_overall.empty:
-    voldoet = (df_mac_overall['Waarde'] <= df_mac_overall['MAC_MKN']).sum()
-    totaal = len(df_mac_overall)
-    pct_mac_total = round((voldoet / totaal * 100), 1)
+# Metrics hergebruiken we niet direct uit utils omdat dit "overall" filters zijn
+pct_jg_total = (df_jg_ov['Waarde'] <= df_jg_ov['JG_MKN']).mean() * 100 if not df_jg_ov.empty else 0
+pct_mac_total = (df_mac_ov['Waarde'] <= df_mac_ov['MAC_MKN']).mean() * 100 if not df_mac_ov.empty else 0
 
-# --- 2. JG Overall (gefilterd op <) ---
-df_jg_overall = df_filtered.dropna(subset=['JG_MKN'])
-if 'Limietsymbool' in df_jg_overall.columns:
-    df_jg_overall = df_jg_overall[df_jg_overall['Limietsymbool'] != '<']
+col_kpi, col_gauges, col_map = st.columns([1, 2, 2])
 
-pct_jg_total = 0
-if not df_jg_overall.empty:
-    voldoet = (df_jg_overall['Waarde'] <= df_jg_overall['JG_MKN']).sum()
-    totaal = len(df_jg_overall)
-    pct_jg_total = round((voldoet / totaal * 100), 1)
+with col_kpi:
+    st.metric("Unieke meetpunten", df_main['Meetpunt'].nunique())
+    # Metingen zonder norm: totaal - (metingen met JG of MAC)
+    df_with_norm = df_filtered.dropna(subset=['JG_MKN', 'MAC_MKN'], how='all')
+    st.metric("Metingen zonder JG/MAC norm", len(df_filtered) - len(df_with_norm))
+    st.metric("Metingen met JG-norm", len(df_jg_ov))
+    st.metric("Metingen met MAC-norm", len(df_mac_ov))
 
-# --- NIEUWE METRIC: Metingen zonder norm ---
-# Een meting heeft geen JG of MAC-norm als BEIDE kolommen NaN zijn.
-# Eerst bepalen we de metingen waar WEL een norm beschikbaar is (niet NaN voor JG OF MAC)
-df_with_norm = df_filtered.dropna(subset=['JG_MKN', 'MAC_MKN'], how='all')
-
-# Het verschil is het aantal metingen zonder norm
-metingen_zonder_norm = len(df_filtered) - len(df_with_norm)
-# -------------------------------------------
-
-
-with col_kpi_info:
-    st.metric(label="Unieke meetpunten", value=df_main['Meetpunt'].nunique())
-    # Nieuwe metric
-    st.metric(label="Aantal unieke metingen van stoffen zonder JG/MAC norm", value=metingen_zonder_norm)
-    st.metric(label="Aantal unieke metingen vergeleken met JG-norm", value=len(df_jg_overall))
-    st.metric(label="Aantal unieke metingen vergeleken met MAC-norm", value=len(df_mac_overall))
-
-with col_kpi_gauges:
-    sub1, sub2 = st.columns(2)
-    sub1.plotly_chart(create_gauge(pct_jg_total, "Totaal: voldoet JG (%)"), use_container_width=True)
-    sub2.plotly_chart(create_gauge(pct_mac_total, "Totaal: voldoet MAC (%)"), use_container_width=True)
+with col_gauges:
+    s1, s2 = st.columns(2)
+    s1.plotly_chart(create_gauge(pct_jg_total, "Totaal: voldoet JG (%)"), use_container_width=True)
+    s2.plotly_chart(create_gauge(pct_mac_total, "Totaal: voldoet MAC (%)"), use_container_width=True)
 
 with col_map:
     df_map = df_filtered[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().dropna()
     if not df_map.empty:
-        center_lat = df_map['Latitude'].mean()
-        center_lon = df_map['Longitude'].mean()
-        
         fig_map = px.scatter_mapbox(
             df_map, lat='Latitude', lon='Longitude', hover_name='Meetpunt',
             size_max=15, zoom=8, mapbox_style="open-street-map"
         )
         fig_map.update_traces(marker=dict(size=12, color='red'))
-        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, mapbox_center={"lat": center_lat, "lon": center_lon})
+        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
         st.plotly_chart(fig_map, use_container_width=True)
 
 st.divider()
 
-# KPI per specifiek meetpunt
+# 6. Detail Gauges per meetpunt
 unieke_meetpunten = sorted(df_filtered['Meetpunt'].unique())
 
-# JG Stats per punt
-jg_stats = df_jg_overall.groupby('Meetpunt', observed=True).apply(
-    lambda x: (x['Waarde'] <= x['JG_MKN']).mean() * 100
-)
-# MAC Stats per punt
-mac_stats = df_mac_overall.groupby('Meetpunt', observed=True).apply(
-    lambda x: (x['Waarde'] <= x['MAC_MKN']).mean() * 100
-)
+# Pre-calc stats (vectorized)
+jg_stats = df_jg_ov.groupby('Meetpunt', observed=True).apply(lambda x: (x['Waarde'] <= x['JG_MKN']).mean() * 100)
+mac_stats = df_mac_ov.groupby('Meetpunt', observed=True).apply(lambda x: (x['Waarde'] <= x['MAC_MKN']).mean() * 100)
 
 with st.expander(f"Toon detailmeters voor alle {len(unieke_meetpunten)} meetpunten", expanded=True):
-    for meetpunt in unieke_meetpunten:
-        pct_jg_mp = jg_stats.get(meetpunt, None)
-        pct_mac_mp = mac_stats.get(meetpunt, None)
-        
-        if pd.isna(pct_jg_mp) and pd.isna(pct_mac_mp):
-                continue
+    for mp in unieke_meetpunten:
+        p_jg = jg_stats.get(mp, None)
+        p_mac = mac_stats.get(mp, None)
+        if pd.isna(p_jg) and pd.isna(p_mac): continue
 
-        st.markdown(f"**{meetpunt}**")
+        st.markdown(f"**{mp}**")
         c1, c2 = st.columns(2)
-        
-        if pd.notna(pct_jg_mp):
-            c1.plotly_chart(create_gauge(pct_jg_mp, f"JG: {meetpunt}", 95), use_container_width=True, key=f"g_jg_{meetpunt}")
-        else:
-            c1.info("Geen JG data")
-            
-        if pd.notna(pct_mac_mp):
-            c2.plotly_chart(create_gauge(pct_mac_mp, f"MAC: {meetpunt}", 95), use_container_width=True, key=f"g_mac_{meetpunt}")
-        else:
-            c2.info("Geen MAC data")
-        
+        if pd.notna(p_jg): c1.plotly_chart(create_gauge(p_jg, f"JG: {mp}", 95), use_container_width=True, key=f"g_jg_{mp}")
+        if pd.notna(p_mac): c2.plotly_chart(create_gauge(p_mac, f"MAC: {mp}", 95), use_container_width=True, key=f"g_mac_{mp}")
+
 st.markdown("---")
 st.subheader("⚠️ Meest recente overschrijdingen")
 
-mask_jg_over = (df_filtered['Waarde'] > df_filtered['JG_MKN'])
-mask_mac_over = (df_filtered['Waarde'] > df_filtered['MAC_MKN'])
-
-df_violations = df_filtered[mask_jg_over | mask_mac_over].copy()
+mask_any_over = (df_filtered['Waarde'] > df_filtered['JG_MKN']) | (df_filtered['Waarde'] > df_filtered['MAC_MKN'])
+df_violations = df_filtered[mask_any_over].copy()
 
 if not df_violations.empty:
     df_violations['Type'] = np.where(
         (df_violations['Waarde'] > df_violations['JG_MKN']) & (df_violations['Waarde'] > df_violations['MAC_MKN']), "JG+MAC",
         np.where(df_violations['Waarde'] > df_violations['JG_MKN'], "JG", "MAC")
     )
-    
     st.dataframe(
         df_violations[['Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'JG_MKN', 'MAC_MKN', 'Type']]
         .sort_values('Datum', ascending=False).head(15),
@@ -636,4 +225,3 @@ if not df_violations.empty:
     )
 else:
     st.success("Geen overschrijdingen gevonden.")
-    
