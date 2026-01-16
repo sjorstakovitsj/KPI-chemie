@@ -1,9 +1,10 @@
+# 2_Toestand_&_Trend.py
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from utils import load_data, get_shared_sidebar, calculate_trends_optimized
+from utils import load_data, get_shared_sidebar, calculate_trends_optimized, calculate_declining_exceedances_optimized
 
 # Pagina configuratie
 st.set_page_config(layout="wide", page_title="Toestand & trendontwikkeling")
@@ -161,7 +162,7 @@ if selected_meetpunten and selected_stoffen:
 
 
 # ==============================================================================
-# NIEUWE SECTIE: OPWAARTSE TREND ANALYSE
+# SECTIE: TREND ANALYSE
 # ==============================================================================
 st.markdown("---")
 st.header("⚠️ Opwaartse trends (o.b.v. jaargemiddelden)")
@@ -197,7 +198,7 @@ with c_trend_filter:
     trend_filter_type = st.radio(
         "Welk type stoffen wil je analyseren?",
         options=["Alle stoffen", "KRW-stoffen", "Niet-genormeerde stoffen"],
-        index=0,
+        index=1,
         horizontal=True,
         key="trend_stof_filter" 
     )
@@ -206,12 +207,12 @@ with c_lt_filter:
     lt_waarde_optie = st.radio(
         "Hoe om te gaan met '< Onder rapportagegrens'-waarden?",
         options=["Gebruik gemeten waarde", "Sluit uit van berekening"], 
-        index=0,
+        index=1,
         horizontal=True,
         key="lt_waarde_optie"
     )
 
-# 1. Data Filteren
+# 1. Data Filteren op Type Stof
 if "KRW-stoffen" in trend_filter_type:
     mask_norm = df_filtered['JG_MKN'].notna() | df_filtered['MAC_MKN'].notna()
     df_trend_filtered = df_filtered[mask_norm].copy()
@@ -221,14 +222,50 @@ elif "Niet-genormeerde stoffen" in trend_filter_type:
 else:
     df_trend_filtered = df_filtered.copy()
 
-# 2. Berekening (GEOPTIMALISEERD DEEL)
+# Globale variabelen die we straks hergebruiken
+df_norm_lookup = df_main[['Stof', 'JG_MKN']].drop_duplicates()
+
+# ==============================================================================
+# BEREKENINGEN & STATISTIEKEN (Voorbereiding voor beide tabellen)
+# ==============================================================================
+stats_df = pd.DataFrame()
+
 if not df_trend_filtered.empty:
     
-    # Maak een aparte lookup dataframe voor de normen uit de hoofddataset
-    # Dit gebeurt buiten de loop voor O(1) opzoeken van normen.
-    df_norm_lookup = df_main[['Stof', 'JG_MKN']].drop_duplicates()
+    df_check = df_trend_filtered.copy()
+    
+    # Pas LT-optie toe op df_check voor statistiekberekening
+    if lt_waarde_optie == "Sluit uit van berekening":
+        is_lt = df_check['Limietsymbool'].astype(str).str.contains('<', na=False)
+        df_check.loc[is_lt, 'Waarde'] = np.nan
+        df_check = df_check.dropna(subset=['Waarde'])
+    
+    # Check voor minimaal 7 metingen (Geldt voor BEIDE analyses)
+    counts = df_check.groupby(['Meetpunt', 'Stof']).size().reset_index(name='n_obs')
+    valid_groups = counts[counts['n_obs'] >= 7][['Meetpunt', 'Stof']]
+    df_trend_filtered = pd.merge(df_trend_filtered, valid_groups, on=['Meetpunt', 'Stof'], how='inner')
+    
+    # -----------------------------------------------------------
+    # BEREKEN GLOBAL MEAN & RSD (voor weergave in tabel)
+    # -----------------------------------------------------------
+    # We gebruiken df_check (waar LT opties al verwerkt zijn) gefilterd op de valid groups
+    df_stats_source = pd.merge(df_check, valid_groups, on=['Meetpunt', 'Stof'], how='inner')
+    
+    # Groepeer en bereken mean en std
+    stats_agg = df_stats_source.groupby(['Meetpunt', 'Stof'])['Waarde'].agg(['mean', 'std']).reset_index()
+    stats_agg['RSD'] = (stats_agg['std'] / stats_agg['mean']) * 100
+    stats_agg = stats_agg.rename(columns={'mean': 'Gemiddelde_Waarde'})
+    
+    stats_df = stats_agg[['Meetpunt', 'Stof', 'Gemiddelde_Waarde', 'RSD']]
 
-    # AANROEP NIEUWE FUNCTIE (GECACEDE)
+
+# ==============================================================================
+# 1. OPWAARTSE TRENDS
+# ==============================================================================
+
+if not df_trend_filtered.empty:
+    
+    # AANROEP FUNCTIE (Rising Trends)
     df_trends = calculate_trends_optimized(
         df_in=df_trend_filtered, 
         lt_optie=lt_waarde_optie, 
@@ -237,23 +274,32 @@ if not df_trend_filtered.empty:
     
     if not df_trends.empty:
         
-        # NIEUWE CODE: FILTEREN VAN REEDS OVERSCHREDEN NORMEN (Tijd_tot_JG_normoverschrijding == 0.0)
-        df_trends = df_trends[df_trends['Tijd_tot_JG_normoverschrijding'] != 0.0].copy()
+        # Filter 1: Verberg trends die > 20 jaar duren
+        df_trends = df_trends[df_trends['Tijd_tot_JG_normoverschrijding'] <= 20].copy()
+
+        # Filter 2: Verberg stoffen die de norm REEDS overschrijden (Tijd > 0)
+        df_trends = df_trends[df_trends['Tijd_tot_JG_normoverschrijding'] > 0].copy()
         
         if df_trends.empty:
-            st.success("Geen stijgende trends gevonden die de norm nog niet overschreden hebben.")
+            st.success("Geen kritieke opwaartse trends gevonden (tijd tot norm tussen 0 en 20 jaar).")
         else:
-            # Sorteer op urgentie (Tijd tot norm oplopend: inf is laagst)
+            # Merge statistieken (Gemiddelde & RSD)
+            df_trends = pd.merge(df_trends, stats_df, on=['Meetpunt', 'Stof'], how='left')
+
+            # Sorteer op urgentie (Tijd tot norm klein -> groot)
             df_trends = df_trends.sort_values('Tijd_tot_JG_normoverschrijding', ascending=True).reset_index(drop=True)
             
-            # Maak een nette label voor de selectbox (aangepast omdat 0.0 nu gefilterd is)
+            # Voeg Rank kolom toe
+            df_trends.insert(0, 'Nr.', range(1, 1 + len(df_trends)))
+            
             def maak_label(row):
                 tijd = row['Tijd_tot_JG_normoverschrijding']
                 if np.isinf(tijd):
                     status = "Info (Geen norm of trend niet relevant)"
                 else:
                     status = f"Overschrijding in {tijd:.1f} jaar"
-                return f"{row['Stof']} @ {row['Meetpunt']} | {status}"
+                # AANGEPAST: Nr. toegevoegd in label
+                return f"{int(row['Nr.'])}. {row['Stof']} @ {row['Meetpunt']} | {status}"
 
             df_trends['Display_Label'] = df_trends.apply(maak_label, axis=1)
 
@@ -261,9 +307,10 @@ if not df_trend_filtered.empty:
             
             with c_tabel:
                 st.write(f"**Gevonden trends:** {len(df_trends)}")
+                st.caption("Stoffen met stijgende trend, nog onder de norm, normoverschrijding < 20jr.")
                 
-                # Configuratie voor nette weergave in de tabel
                 column_config = {
+                    "Nr.": st.column_config.NumberColumn("Nr.", format="%d", width="small"),
                     "Tijd_tot_JG_normoverschrijding": st.column_config.NumberColumn(
                         "Tijd tot JG-norm (jr)",
                         help="Jaren tot overschrijding. inf = Geen norm.",
@@ -273,16 +320,15 @@ if not df_trend_filtered.empty:
                         "Helling (Trend)",
                         format="%.5f"
                     ),
-                    "Startwaarde": st.column_config.NumberColumn("gemiddelde conc. eerste jaar", format="%.4f"),
-                    "Eindwaarde": st.column_config.NumberColumn("gemiddelde conc. laatste jaar", format="%.4f"),
+                    "Gemiddelde_Waarde": st.column_config.NumberColumn("Gem. Conc.", format="%.4f"),
+                    "RSD": st.column_config.NumberColumn("RSD (%)", format="%.1f%%"),
                     "Meetpunt": st.column_config.TextColumn("Locatie"),
                     "Stof": st.column_config.TextColumn("Stofnaam"),
-                    "Aantal_jaren": st.column_config.NumberColumn("Aantal jaren tot voorspelde normoverschrijding", format="%d")
+                    "n_metingen_boven_rg": st.column_config.NumberColumn("Metingen > RG", format="%d")
                 }
 
-                # Weergave tabel
                 st.dataframe(
-                    df_trends[['Meetpunt', 'Stof', 'Trendscore', 'Tijd_tot_JG_normoverschrijding', 'Aantal_jaren', 'Startwaarde', 'Eindwaarde']],
+                    df_trends[['Nr.', 'Meetpunt', 'Stof', 'n_metingen_boven_rg', 'Trendscore', 'Tijd_tot_JG_normoverschrijding', 'Gemiddelde_Waarde', 'RSD']],
                     use_container_width=True,
                     height=500,
                     hide_index=True,
@@ -290,69 +336,67 @@ if not df_trend_filtered.empty:
                 )
 
             with c_grafiek:
-                st.write("### Trendgrafiek ")
-                st.info("Selecteer hieronder een trend om de grafiek te bekijken. De lijst is gesorteerd op urgentie (zoals de tabel).")
+                st.write("### Trendgrafiek (Opwaarts)")
+                st.info("Selecteer hieronder een trend om de grafiek te bekijken.")
                 
-                # DE ALTERNATIEVE SELECTIE METHODE (ROBUUST)
                 gekozen_label = st.selectbox(
                     "Selecteer trend:",
                     options=df_trends['Display_Label']
                 )
                 
-                # Haal de data op die hoort bij het label
                 gekozen_rij = df_trends[df_trends['Display_Label'] == gekozen_label].iloc[0]
-                
                 mp_keuze = gekozen_rij['Meetpunt']
                 stof_keuze = gekozen_rij['Stof']
                 slope = gekozen_rij['Trendscore']
                 tijd_tot_norm = gekozen_rij['Tijd_tot_JG_normoverschrijding']
                 
-                # Data ophalen voor plot: Filter de df_trend_filtered (de dataset van de sidebar)
-                # En bereken de jaargemiddelden opnieuw voor de plot.
+                # RAW DATA Ophalen (voor de scatter plot)
                 df_plot_source = df_trend_filtered[
                     (df_trend_filtered['Meetpunt'] == mp_keuze) & 
                     (df_trend_filtered['Stof'] == stof_keuze)
                 ].copy()
                 
-                # Pas de < logica toe voor de plot consistent met de berekening
                 if lt_waarde_optie == "Sluit uit van berekening":
                     mask_lt_plot = df_plot_source['Limietsymbool'].astype(str).str.contains('<', na=False)
                     df_plot_source.loc[mask_lt_plot, 'Waarde'] = np.nan
+                    df_plot_source = df_plot_source.dropna(subset=['Waarde'])
                 
+                # JAARGEMIDDELDE (voor de trendlijn berekening, om consistent te zijn met de helling in de tabel)
                 df_plot_source['Jaar'] = df_plot_source['Datum'].dt.year
-                # Gebruik de 'Waarde' kolom (die eventueel op NaN is gezet door de lt_waarde_optie)
-                plot_data = df_plot_source.groupby('Jaar')['Waarde'].mean().reset_index().dropna(subset=['Waarde'])
+                plot_data_agg = df_plot_source.groupby('Jaar')['Waarde'].mean().reset_index()
 
-                # Trendlijn berekenen
-                z = np.polyfit(plot_data['Jaar'], plot_data['Waarde'], 1)
+                z = np.polyfit(plot_data_agg['Jaar'], plot_data_agg['Waarde'], 1)
                 p = np.poly1d(z)
-                plot_data['Trendlijn'] = p(plot_data['Jaar'])
+                plot_data_agg['Trendlijn'] = p(plot_data_agg['Jaar'])
                 
-                # Plotten
+                # Maak een fictieve datum (1 juli) aan de jaardata vast om de trendlijn op de datum-as te kunnen plotten
+                plot_data_agg['Datum_Plot'] = pd.to_datetime(plot_data_agg['Jaar'].astype(str) + '-07-01')
+
                 fig_trend = go.Figure()
                 
-                # Punten
+                # 1. Scatter: Individuele punten (Datum vs Waarde)
                 fig_trend.add_trace(go.Scatter(
-                    x=plot_data['Jaar'], y=plot_data['Waarde'],
-                    mode='markers+lines', name='Jaargemiddelde',
-                    marker=dict(size=10, color='blue'), hoverinfo='all'
+                    x=df_plot_source['Datum'], 
+                    y=df_plot_source['Waarde'],
+                    mode='markers', 
+                    name='Individuele meting',
+                    marker=dict(size=8, color='blue', opacity=0.6), 
+                    hoverinfo='x+y'
                 ))
                 
-                # Lijn
+                # 2. Line: Trendlijn (berekend op jaren, geplot op datum-as)
                 fig_trend.add_trace(go.Scatter(
-                    x=plot_data['Jaar'], y=plot_data['Trendlijn'],
-                    mode='lines', name=f'Trendlijn (helling={slope:.4f})',
+                    x=plot_data_agg['Datum_Plot'], 
+                    y=plot_data_agg['Trendlijn'],
+                    mode='lines', 
+                    name=f'Trendlijn (helling={slope:.4f})',
                     line=dict(color='red', dash='dash'),
                     hovertemplate='**Trendwaarde:** %{y:.4f}<br>**Jaar:** %{x}<extra></extra>'
                 ))
                 
-                # Norm
-                # Norm ophalen via de snelle lookup tabel
                 jg_norm = df_norm_lookup[df_norm_lookup['Stof'] == stof_keuze]['JG_MKN'].iloc[0] if not df_norm_lookup[df_norm_lookup['Stof'] == stof_keuze].empty else np.nan
                 
-                # Titel bepalen
                 titel_suffix = ""
-                # De 0.0 case is nu uitgesloten door de filter, dus alleen inf of > 0.0
                 if np.isinf(tijd_tot_norm):
                     titel_suffix = " (Nvt)"
                 else:
@@ -363,14 +407,9 @@ if not df_trend_filtered.empty:
 
                 fig_trend.update_layout(
                     title=f"{stof_keuze} @ {mp_keuze} {titel_suffix}",
-                    xaxis_title="Jaar",
-                    yaxis_title="Concentratie (gem)",
-                    hovermode="x unified",
-                    xaxis=dict(
-                        tickformat='d',  # Format als geheel getal
-                        dtick=1,         # Zet de stapgrootte op 1 eenheid (jaar)
-                        showgrid=True    # Maakt de discrete stappen duidelijker
-                    )
+                    xaxis_title="Datum",
+                    yaxis_title="Concentratie",
+                    hovermode="closest"
                 )
                 
                 st.plotly_chart(fig_trend, use_container_width=True)
@@ -379,3 +418,139 @@ if not df_trend_filtered.empty:
         st.success("Geen stijgende trends gevonden in de huidige selectie/jaren.")
 else:
     st.warning("Geen data beschikbaar voor trendanalyse.")
+
+
+# ==============================================================================
+# SECTIE: OVERSCHRIJDING MAAR DALEND/STAGNAIR
+# ==============================================================================
+st.markdown("---")
+st.header("📉 Normoverschrijdingen met dalende of stagnante trend")
+st.info("Deze sectie toont stoffen die momenteel de JG-MKN norm overschrijden, maar waarbij de trend niet stijgt (helling ≤ 0). Dit zijn potentiële 'goede nieuws' gevallen of situaties die stabiliseren.")
+
+if not df_trend_filtered.empty:
+    
+    # Gebruik de reeds gefilterde dataset (df_trend_filtered bevat al de >7 metingen check)
+    df_declining = calculate_declining_exceedances_optimized(
+        df_in=df_trend_filtered,
+        lt_optie=lt_waarde_optie,
+        norm_lookup_df=df_norm_lookup
+    )
+
+    if df_declining.empty:
+        st.write("Geen stoffen gevonden die de norm overschrijden met een dalende of stagnante trend in deze selectie.")
+    else:
+        # Filter: Verberg trends die > 20 jaar duren om onder de norm te komen
+        df_declining = df_declining[df_declining['Tijd_tot_onder_norm'] <= 20].copy()
+
+        if df_declining.empty:
+            st.success("Er zijn wel dalende overschrijdingen, maar geen enkele komt binnen 20 jaar onder de norm.")
+        else:
+            # Merge statistieken (Gemiddelde & RSD)
+            df_declining = pd.merge(df_declining, stats_df, on=['Meetpunt', 'Stof'], how='left')
+            
+            # Sorteer op 'Tijd_tot_onder_norm' (Laag -> Hoog, dus snelst opgelost bovenaan)
+            df_declining = df_declining.sort_values('Tijd_tot_onder_norm', ascending=True).reset_index(drop=True)
+            
+            # Voeg Rank kolom toe
+            df_declining.insert(0, 'Nr.', range(1, 1 + len(df_declining)))
+
+            c_table_dec, c_graph_dec = st.columns([1, 2])
+
+            with c_table_dec:
+                st.write(f"**Gevonden records (binnen 20 jaar opgelost):** {len(df_declining)}")
+                
+                column_config_dec = {
+                    "Nr.": st.column_config.NumberColumn("Nr.", format="%d", width="small"),
+                    "JG_MKN": st.column_config.NumberColumn("JG Norm", format="%.4f"),
+                    "Trendscore": st.column_config.NumberColumn("Helling (Trend)", format="%.5f"),
+                    "Gemiddelde_Waarde": st.column_config.NumberColumn("Gem. Conc.", format="%.4f"),
+                    "RSD": st.column_config.NumberColumn("RSD (%)", format="%.1f%%"),
+                    "Meetpunt": st.column_config.TextColumn("Locatie"),
+                    "Stof": st.column_config.TextColumn("Stofnaam"),
+                    "Tijd_tot_onder_norm": st.column_config.NumberColumn("Jaren tot onder norm", format="%.1f"),
+                    "n_metingen_boven_rg": st.column_config.NumberColumn("Metingen > RG", format="%d")
+                }
+
+                st.dataframe(
+                    df_declining[['Nr.', 'Meetpunt', 'Stof', 'n_metingen_boven_rg', 'Trendscore', 'JG_MKN', 'Gemiddelde_Waarde', 'RSD', 'Tijd_tot_onder_norm']],
+                    use_container_width=True,
+                    height=500,
+                    hide_index=True,
+                    column_config=column_config_dec
+                )
+
+            with c_graph_dec:
+                st.write("### Trendgrafiek (Stagnant/Dalend)")
+                
+                # Label maken voor selector MET Nr.
+                df_declining['Display_Label'] = df_declining.apply(
+                    lambda row: f"{int(row['Nr.'])}. {row['Stof']} @ {row['Meetpunt']} (Helling: {row['Trendscore']:.4f})", axis=1
+                )
+                
+                keuze_dalend = st.selectbox(
+                    "Selecteer record:",
+                    options=df_declining['Display_Label'],
+                    key="select_dalend"
+                )
+                
+                rij_dalend = df_declining[df_declining['Display_Label'] == keuze_dalend].iloc[0]
+                
+                mp_d = rij_dalend['Meetpunt']
+                stof_d = rij_dalend['Stof']
+                slope_d = rij_dalend['Trendscore']
+                norm_d = rij_dalend['JG_MKN']
+
+                # RAW DATA ophalen voor plot
+                df_plot_d = df_trend_filtered[
+                    (df_trend_filtered['Meetpunt'] == mp_d) & 
+                    (df_trend_filtered['Stof'] == stof_d)
+                ].copy()
+
+                if lt_waarde_optie == "Sluit uit van berekening":
+                    mask_lt_d = df_plot_d['Limietsymbool'].astype(str).str.contains('<', na=False)
+                    df_plot_d.loc[mask_lt_d, 'Waarde'] = np.nan
+                    df_plot_d = df_plot_d.dropna(subset=['Waarde'])
+                
+                # Trendlijn berekening (op aggregatie om consistent te blijven met helling)
+                df_plot_d['Jaar'] = df_plot_d['Datum'].dt.year
+                plot_data_d_agg = df_plot_d.groupby('Jaar')['Waarde'].mean().reset_index()
+
+                z_d = np.polyfit(plot_data_d_agg['Jaar'], plot_data_d_agg['Waarde'], 1)
+                p_d = np.poly1d(z_d)
+                plot_data_d_agg['Trendlijn'] = p_d(plot_data_d_agg['Jaar'])
+                
+                # Fictieve datum voor plotting van de lijn
+                plot_data_d_agg['Datum_Plot'] = pd.to_datetime(plot_data_d_agg['Jaar'].astype(str) + '-07-01')
+
+                fig_d = go.Figure()
+                
+                # 1. Scatter: Individuele punten
+                fig_d.add_trace(go.Scatter(
+                    x=df_plot_d['Datum'], 
+                    y=df_plot_d['Waarde'],
+                    mode='markers', 
+                    name='Individuele meting',
+                    marker=dict(size=8, color='green', opacity=0.6), 
+                    hoverinfo='x+y'
+                ))
+                
+                # 2. Line: Trendlijn
+                fig_d.add_trace(go.Scatter(
+                    x=plot_data_d_agg['Datum_Plot'], 
+                    y=plot_data_d_agg['Trendlijn'],
+                    mode='lines', 
+                    name=f'Trendlijn (helling={slope_d:.4f})',
+                    line=dict(color='gray', dash='dot'),
+                    hovertemplate='**Trendwaarde:** %{y:.4f}<br>**Jaar:** %{x}<extra></extra>'
+                ))
+                
+                fig_d.add_hline(y=norm_d, line_dash="solid", line_color="orange", annotation_text=f"JG-norm: {norm_d}")
+
+                fig_d.update_layout(
+                    title=f"{stof_d} @ {mp_d}",
+                    xaxis_title="Datum",
+                    yaxis_title="Concentratie",
+                    hovermode="closest"
+                )
+                
+                st.plotly_chart(fig_d, use_container_width=True)

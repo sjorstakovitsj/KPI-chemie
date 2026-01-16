@@ -44,48 +44,67 @@ with st.container():
 
     c_loc, c_grp, c_stof = st.columns([2, 2, 2])
 
-    # Opties ophalen (gebruik categories voor snelheid)
+    # 1. Meetpunt Selectie
     loc_opts = sorted(df_space['Meetpunt'].unique())
     sel_loc = c_loc.multiselect("Meetpunt", loc_opts, default=loc_opts)
 
+    # 2. Stofgroep Selectie
     grp_opts = sorted(df_space['Stofgroep'].unique())
     sel_grp = c_grp.multiselect("Stofgroep", grp_opts, default=[grp_opts[0]] if grp_opts else None)
 
-    # Contextuele filter voor stof
-    if sel_grp:
-        # Filter de opties snel
-        mask_grp_opt = df_space['Stofgroep'].isin(sel_grp)
-        stof_opts = sorted(df_space.loc[mask_grp_opt, 'Stof'].unique())
-    else:
-        stof_opts = sorted(df_space['Stof'].unique())
+    # --- DYNAMISCHE STOF OPTIES LOGICA ---
+    # We berekenen hier welke stoffen beschikbaar zijn op basis van ALLE voorgaande filters
+    # (Tijd, Locatie, Stofgroep EN Detectielimiet)
+    
+    # Start met basis datum filter
+    mask_opt = (df_space['Datum'].dt.date >= start_date) & (df_space['Datum'].dt.date <= end_date)
+    
+    # Filter op zomerhalfjaar indien aangevinkt
+    if zomerhalfjaar:
+        mask_opt &= (df_space['Datum'].dt.month >= 4) & (df_space['Datum'].dt.month <= 9)
+        
+    # Filter op detectielimiet (>RG) voor de opties
+    if alleen_detecties:
+        mask_opt &= ~df_space['Limietsymbool'].astype(str).str.contains('<', na=False)
 
+    # Filter op geselecteerde locaties
+    if sel_loc:
+        mask_opt &= df_space['Meetpunt'].isin(sel_loc)
+        
+    # Filter op geselecteerde stofgroep
+    if sel_grp:
+        mask_opt &= df_space['Stofgroep'].isin(sel_grp)
+    
+    # Haal de unieke stoffen op die voldoen aan dit masker
+    stof_opts = sorted(df_space.loc[mask_opt, 'Stof'].unique())
+
+    # 3. Stof Selectie
     sel_stof = c_stof.multiselect("Stof", stof_opts, default=stof_opts[:1] if stof_opts else [])
 
 # --- DATA FILTERING LOGICA (VECTORIZED) ---
+# Nu passen we de filters definitief toe voor de grafieken.
+# (We doen dit opnieuw om de logica schoon te houden en dff_final correct op te bouwen)
 
-# 1. Datum Filter (Pandas is optimized for datetime slicing)
+# 1. Datum Filter
 mask_date = (df_space['Datum'].dt.date >= start_date) & (df_space['Datum'].dt.date <= end_date)
 
 # 2. Zomer Filter
 if zomerhalfjaar:
-    # dt.month is vectorized en erg snel
     mask_zomer = (df_space['Datum'].dt.month >= 4) & (df_space['Datum'].dt.month <= 9)
     mask_date = mask_date & mask_zomer
 
 # 3. Categorische filters
-# Check op None om warning te voorkomen bij lege selectie
 mask_loc = df_space['Meetpunt'].isin(sel_loc) if sel_loc else pd.Series(False, index=df_space.index)
 mask_grp = df_space['Stofgroep'].isin(sel_grp) if sel_grp else pd.Series(True, index=df_space.index)
 mask_stof = df_space['Stof'].isin(sel_stof) if sel_stof else pd.Series(False, index=df_space.index)
 
-# AANGEPAST: 4. Detectie Limiet Filter (>RG)
+# 4. Detectie Limiet Filter (>RG)
 if alleen_detecties:
-    # Filter rijen waar Limietsymbool een '<' bevat eruit
     mask_limit = ~df_space['Limietsymbool'].astype(str).str.contains('<', na=False)
 else:
     mask_limit = pd.Series(True, index=df_space.index)
 
-# Pas alle filters in één keer toe (inclusief mask_limit)
+# Pas alle filters in één keer toe
 dff_final = df_space[mask_date & mask_loc & mask_grp & mask_stof & mask_limit].copy()
 
 if dff_final.empty:
@@ -100,7 +119,7 @@ else:
     time_agg = dff_final.groupby(['Datum', 'Meetpunt'], observed=True)['Waarde'].mean().reset_index()
     tijd_fig = px.line(time_agg, x="Datum", y="Waarde", color="Meetpunt", markers=True, title="Verloop in de tijd")
     
-    # NIEUW: Zorg dat de x-as alleen hele jaartallen toont
+    # Zorg dat de x-as alleen hele jaartallen toont
     tijd_fig.update_xaxes(dtick="M12", tickformat="%Y", ticklabelmode="period")
     
     col_tijd.plotly_chart(tijd_fig, use_container_width=True)
@@ -109,7 +128,6 @@ else:
     loc_agg = dff_final.groupby("Meetpunt", observed=True)["Waarde"].mean().reset_index()
 
     # Efficiënte coördinaten lookup (zonder grote merge op de hele dataset)
-    # We halen unieke coords uit df_main (origineel)
     coords_ref = df_main[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().dropna()
 
     # Merge alleen de geaggregeerde tabel
@@ -138,7 +156,7 @@ else:
     # C. Heatmap & Bar
     col_heat, col_sub = st.columns(2)
 
-    # Pivot voor heatmap (groupby + pivot is vaak schoner dan pivot_table op grote sets)
+    # Pivot voor heatmap
     heat_data = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].mean().unstack()
     heat_fig = px.imshow(heat_data, aspect="auto", color_continuous_scale="YlGnBu", title="Heatmap van gemiddelde waarden", text_auto=".3f")
     col_heat.plotly_chart(heat_fig, use_container_width=True)
@@ -163,11 +181,10 @@ else:
         # Split in Ref en Rest
         ref_data = means[means['Meetpunt'] == ref_mp][['Stof', 'Waarde']].rename(columns={'Waarde': 'Ref_Waarde'})
 
-        # Merge terug (Inner join: we kunnen alleen vergelijken als stof op beide plekken gemeten is)
+        # Merge terug
         fc_data = pd.merge(means, ref_data, on='Stof', how='inner')
 
         # Vectorized berekening
-        # Voorkom delen door nul
         fc_data = fc_data[fc_data['Ref_Waarde'] > 0]
         fc_data['Log2FC'] = np.log2(fc_data['Waarde'] / fc_data['Ref_Waarde'])
 
