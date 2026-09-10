@@ -13,6 +13,15 @@ st.header("Ruimtelijke analyse")
 df_main = load_data()
 df_filtered = get_shared_sidebar(df_main)
 
+# De shared sidebar bewaart de gekozen methode in session_state, zodat de
+# bestaande returnwaarde van get_shared_sidebar ongewijzigd blijft.
+aggregatiemethode = st.session_state.get(
+    "ruimtelijke_aggregatiemethode", "Gemiddelde"
+)
+agg_func = "median" if aggregatiemethode == "Mediaan" else "mean"
+agg_label = "Mediaan" if agg_func == "median" else "Gemiddelde"
+agg_label_lower = agg_label.lower()
+
 st.header("🔍 Ruimtelijke analyse")
 
 # We werken hier verder met een kopie van df_filtered (al gefilterd op jaren sidebar)
@@ -116,16 +125,16 @@ else:
     col_kaart, col_tijd = st.columns(2)
 
     # Aggregaties voor plots (observed=True voor speed)
-    time_agg = dff_final.groupby(['Datum', 'Meetpunt'], observed=True)['Waarde'].mean().reset_index()
-    tijd_fig = px.line(time_agg, x="Datum", y="Waarde", color="Meetpunt", markers=True, title="Verloop in de tijd")
+    time_agg = dff_final.groupby(['Datum', 'Meetpunt'], observed=True)['Waarde'].agg(agg_func).reset_index()
+    tijd_fig = px.line(time_agg, x="Datum", y="Waarde", color="Meetpunt", markers=True, title=f"Verloop in de tijd ({agg_label_lower})")
     
     # Zorg dat de x-as alleen hele jaartallen toont
     tijd_fig.update_xaxes(dtick="M12", tickformat="%Y", ticklabelmode="period")
     
-    col_tijd.plotly_chart(tijd_fig, use_container_width=True)
+    col_tijd.plotly_chart(tijd_fig, width="stretch")
 
     # Kaart data
-    loc_agg = dff_final.groupby("Meetpunt", observed=True)["Waarde"].mean().reset_index()
+    loc_agg = dff_final.groupby("Meetpunt", observed=True)["Waarde"].agg(agg_func).reset_index()
 
     # Efficiënte coördinaten lookup (zonder grote merge op de hele dataset)
     coords_ref = df_main[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().dropna()
@@ -134,13 +143,13 @@ else:
     loc_map = pd.merge(loc_agg, coords_ref, on='Meetpunt', how='inner')
 
     if not loc_map.empty:
-        kaart_fig = px.scatter_mapbox(
+        kaart_fig = px.scatter_map(
             loc_map, lat="Latitude", lon="Longitude", color="Waarde",
             size=[15]*len(loc_map), hover_name="Meetpunt",
-            color_continuous_scale="YlOrRd", zoom=7.5, mapbox_style="open-street-map",
-            title="Gemiddelde waarde per locatie"
+            color_continuous_scale="YlOrRd", zoom=7.5, map_style="open-street-map",
+            title=f"{agg_label} waarde per locatie"
         )
-        col_kaart.plotly_chart(kaart_fig, use_container_width=True)
+        col_kaart.plotly_chart(kaart_fig, width="stretch")
     else:
         col_kaart.info("Geen coördinaten beschikbaar voor deze meetpunten.")
 
@@ -148,22 +157,22 @@ else:
     col_box, col_strip = st.columns(2)
 
     box_fig = px.box(dff_final, x="Stof", y="Waarde", color="Meetpunt", title="Verdeling per stof")
-    col_box.plotly_chart(box_fig, use_container_width=True)
+    col_box.plotly_chart(box_fig, width="stretch")
 
     strip_fig = px.strip(dff_final, x="Waarde", y="Stof", color="Meetpunt", title="Individuele meetwaarden")
-    col_strip.plotly_chart(strip_fig, use_container_width=True)
+    col_strip.plotly_chart(strip_fig, width="stretch")
 
     # C. Heatmap & Bar
     col_heat, col_sub = st.columns(2)
 
     # Pivot voor heatmap
-    heat_data = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].mean().unstack()
-    heat_fig = px.imshow(heat_data, aspect="auto", color_continuous_scale="YlGnBu", title="Heatmap van gemiddelde waarden", text_auto=".3f")
-    col_heat.plotly_chart(heat_fig, use_container_width=True)
+    heat_data = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].agg(agg_func).unstack()
+    heat_fig = px.imshow(heat_data, aspect="auto", color_continuous_scale="YlGnBu", title=f"Heatmap van {agg_label_lower} waarden", text_auto=".3f")
+    col_heat.plotly_chart(heat_fig, width="stretch")
 
-    sub_agg = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].mean().reset_index()
-    sub_fig = px.bar(sub_agg, x="Stof", y="Waarde", color="Meetpunt", barmode="group", title="Gemiddelde per meetpunt", text=sub_agg['Waarde'].apply(lambda x: f'{x:.3f}'))
-    col_sub.plotly_chart(sub_fig, use_container_width=True)
+    sub_agg = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].agg(agg_func).reset_index()
+    sub_fig = px.bar(sub_agg, x="Stof", y="Waarde", color="Meetpunt", barmode="group", title=f"{agg_label} per meetpunt", text=sub_agg['Waarde'].apply(lambda x: f'{x:.3f}'))
+    col_sub.plotly_chart(sub_fig, width="stretch")
 
     # D. Fold Change Analyse
     st.markdown("---")
@@ -175,8 +184,8 @@ else:
     if len(beschikbare_mp_fc) > 1:
         ref_mp = st.selectbox("Selecteer referentie meetpunt", beschikbare_mp_fc)
 
-        # Bereken gemiddelden
-        means = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].mean().reset_index()
+        # Bereken de in de shared sidebar gekozen centrummaat
+        means = dff_final.groupby(["Stof", "Meetpunt"], observed=True)["Waarde"].agg(agg_func).reset_index()
 
         # Split in Ref en Rest
         ref_data = means[means['Meetpunt'] == ref_mp][['Stof', 'Waarde']].rename(columns={'Waarde': 'Ref_Waarde'})
@@ -194,13 +203,13 @@ else:
         if not fc_plot.empty:
             fig_fc = px.scatter(
                 fc_plot, x="Log2FC", y="Stof", color="Meetpunt",
-                title=f"Fold Change t.o.v. {ref_mp}",
+                title=f"Fold Change op basis van {agg_label_lower} t.o.v. {ref_mp}",
                 hover_data={'Waarde':':.2f', 'Ref_Waarde':':.2f'}
             )
             fig_fc.add_vline(x=0, line_dash="dash", line_color="black")
             fig_fc.add_vline(x=1, line_dash="dot", line_color="gray")
             fig_fc.add_vline(x=-1, line_dash="dot", line_color="gray")
-            st.plotly_chart(fig_fc, use_container_width=True)
+            st.plotly_chart(fig_fc, width="stretch")
         else:
             st.info("Geen overlappende stoffen gevonden om te vergelijken.")
     else:

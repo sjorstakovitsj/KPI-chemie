@@ -125,23 +125,137 @@ def load_data():
         st.error(f"Bestand niet gevonden op pad: {DATA_FILE_PATH}.")
         return pd.DataFrame()
     
-    df = df.rename(columns={
-        'eventdatum': 'Datum',
-        'locatie_code': 'Meetpunt',
-        'parameter_omschrijving': 'Stof',
-        'event_waarde': 'Waarde',
-        'eenheid_code': 'Eenheid',
-        'event_waarde_limietsymbool': 'Limietsymbool',
-        'hoedanigheid_code': 'hoedanigheid',
-        'locatie_lat_etrs89': 'Latitude',
-        'locatie_lon_etrs89': 'Longitude',
-        'hoedanigheid_omschrijving': 'Hoedanigheid_Omschr', 
-        'eenheid_omschrijving': 'Eenheid_Omschr',
-    })
+    # Normaliseer en koppel ALLE benodigde bronkolommen aan vaste interne namen.
+    # De vergelijking is ongevoelig voor hoofdletters, BOM-tekens, spaties,
+    # koppeltekens, punten en underscores. De originele gegevenswaarden blijven behouden.
+    def _normaliseer_kolomnaam(naam):
+        return (
+            str(naam)
+            .replace('\ufeff', '')
+            .strip()
+            .casefold()
+            .replace('ë', 'e')
+            .replace('é', 'e')
+            .replace('ï', 'i')
+            .replace('ö', 'o')
+            .replace('ü', 'u')
+        )
+
+    def _kolomsleutel(naam):
+        # Maak equivalente schrijfwijzen gelijk, bijvoorbeeld:
+        # 'Event Waarde', 'event-waarde' en 'event_waarde'.
+        return ''.join(
+            teken for teken in _normaliseer_kolomnaam(naam)
+            if teken.isalnum()
+        )
+
+    column_aliases = {
+        'Datum': [
+            'datum', 'eventdatum', 'event_datum', 'meetdatum', 'monsterdatum'
+        ],
+        'Meetpunt': [
+            'meetpunt', 'locatie_code', 'locatiecode', 'meetpunt_code',
+            'meetpuntcode', 'locatie'
+        ],
+        'Stof': [
+            'stof', 'parameter_omschrijving', 'parameteromschrijving',
+            'parameter', 'stofnaam'
+        ],
+        'Waarde': [
+            'waarde', 'event_waarde', 'eventwaarde', 'meetwaarde',
+            'resultaat', 'numerieke_waarde'
+        ],
+        'Eenheid': [
+            'eenheid', 'eenheid_code', 'eenheidcode', 'unit'
+        ],
+        'Limietsymbool': [
+            'limietsymbool', 'limiet_symbool', 'event_waarde_limietsymbool',
+            'eventwaardelimietsymbool', 'event_waarde_limiet_symbool',
+            'grenssymbool', 'detectielimietsymbool'
+        ],
+        'hoedanigheid': [
+            'hoedanigheid', 'hoedanigheid_code', 'hoedanigheidcode'
+        ],
+        'Latitude': [
+            'latitude', 'lat', 'locatie_lat_etrs89', 'locatielatetrs89',
+            'breedtegraad'
+        ],
+        'Longitude': [
+            'longitude', 'lon', 'lng', 'locatie_lon_etrs89',
+            'locatielonetrs89', 'lengtegraad'
+        ],
+        'Hoedanigheid_Omschr': [
+            'hoedanigheid_omschr', 'hoedanigheid_omschrijving',
+            'hoedanigheidomschrijving'
+        ],
+        'Eenheid_Omschr': [
+            'eenheid_omschr', 'eenheid_omschrijving', 'eenheidomschrijving'
+        ],
+    }
+
+    # Bouw één lookup op voor alle toegestane schrijfwijzen.
+    alias_lookup = {}
+    for target, aliases in column_aliases.items():
+        for naam in [target, *aliases]:
+            sleutel = _kolomsleutel(naam)
+            bestaand_target = alias_lookup.get(sleutel)
+            if bestaand_target is not None and bestaand_target != target:
+                raise ValueError(
+                    f"Dubbelzinnige kolomalias '{naam}' voor "
+                    f"'{bestaand_target}' en '{target}'."
+                )
+            alias_lookup[sleutel] = target
+
+    # Verzamel alle gevonden varianten per interne doelkolom.
+    gevonden_kolommen = {target: [] for target in column_aliases}
+    for kolom in df.columns:
+        target = alias_lookup.get(_kolomsleutel(kolom))
+        if target is not None:
+            gevonden_kolommen[target].append(kolom)
+
+    # Combineer dubbele/alternatieve kolommen zonder niet-lege waarden te verliezen.
+    # De interne doelnaam krijgt voorrang als die al aanwezig is.
+    for target, bronkolommen in gevonden_kolommen.items():
+        if not bronkolommen:
+            continue
+
+        bronkolommen.sort(
+            key=lambda kolom: _kolomsleutel(kolom) != _kolomsleutel(target)
+        )
+        gecombineerd = df[bronkolommen[0]].copy()
+        for kolom in bronkolommen[1:]:
+            gecombineerd = gecombineerd.combine_first(df[kolom])
+
+        df[target] = gecombineerd
+        verwijderen = [kolom for kolom in bronkolommen if kolom != target]
+        if verwijderen:
+            df = df.drop(columns=verwijderen)
+
+    # Stop met een duidelijke diagnose als een verplichte bronkolom echt ontbreekt.
+    verplichte_kolommen = [
+        'Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'Limietsymbool',
+        'hoedanigheid', 'Latitude', 'Longitude',
+        'Hoedanigheid_Omschr', 'Eenheid_Omschr'
+    ]
+    ontbrekende_kolommen = [
+        kolom for kolom in verplichte_kolommen if kolom not in df.columns
+    ]
+    if ontbrekende_kolommen:
+        raise ValueError(
+            "De dataset mist verplichte kolommen na normalisatie: "
+            f"{ontbrekende_kolommen}. Aangetroffen bronkolommen: "
+            f"{list(df.columns)}"
+        )
 
     df['hoedanigheid'] = df['hoedanigheid'].astype(str).str.strip().str.lower()
     df['Stof'] = df['Stof'].astype(str).str.strip()
-    df['Limietsymbool'] = df['Limietsymbool'].astype(str).replace('nan', '').fillna('')
+    df['Limietsymbool'] = (
+        df['Limietsymbool']
+        .fillna('')
+        .astype(str)
+        .str.strip()
+        .replace({'nan': '', 'None': '', '<NA>': ''})
+    )
     
     df['Hoedanigheid_Omschr_lower'] = df['Hoedanigheid_Omschr'].astype(str).str.strip().str.lower()
     df['Eenheid_Omschr_lower'] = df['Eenheid_Omschr'].astype(str).str.strip().str.lower()
@@ -194,9 +308,18 @@ def load_data():
     
     df['Stof'] = df['Stof'].str.lower()
     df['Datum'] = pd.to_datetime(df['Datum'], format='%Y-%m-%d', errors='coerce')
-    df['Waarde'] = pd.to_numeric(df['Waarde'], errors='coerce')
-    df['Latitude'] = pd.to_numeric(df['Latitude'], errors='coerce')
-    df['Longitude'] = pd.to_numeric(df['Longitude'], errors='coerce')
+    # Ondersteun numerieke waarden met zowel een decimale punt als decimale komma.
+    for numerieke_kolom in ['Waarde', 'Latitude', 'Longitude']:
+        df[numerieke_kolom] = (
+            df[numerieke_kolom]
+            .astype('string')
+            .str.strip()
+            .str.replace(' ', '', regex=False)
+            .str.replace(',', '.', regex=False)
+        )
+        df[numerieke_kolom] = pd.to_numeric(
+            df[numerieke_kolom], errors='coerce'
+        )
 
     df = df[df['Waarde'] != 999999999999]
     df = df.dropna(subset=['Waarde', 'Datum', 'Meetpunt', 'Stof']).copy()
@@ -341,6 +464,19 @@ def get_shared_sidebar(df_main):
     else:
         df_filtered = df_main.copy()
         
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📊 Aggregatiemethode")
+    st.sidebar.radio(
+        "Bereken ruimtelijke waarden als:",
+        options=["Gemiddelde", "Mediaan"],
+        index=0,
+        key="ruimtelijke_aggregatiemethode",
+        help=(
+            "Deze keuze wordt gebruikt in de Ruimtelijke analyse. "
+            "De mediaan is minder gevoelig voor uitschieters dan het gemiddelde."
+        ),
+    )
+
     st.sidebar.markdown("---")
     st.sidebar.info("Navigeer via het menu hierboven naar de verschillende analyses.")
     

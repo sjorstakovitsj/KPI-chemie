@@ -107,7 +107,7 @@ else:
             xaxis=dict(title="Meetpunt", tickangle=-45), yaxis=dict(title="Stof", autorange="reversed"),
             margin=dict(l=0, r=0, t=50, b=0)
         )
-        st.plotly_chart(fig_heatmap, use_container_width=True)
+        st.plotly_chart(fig_heatmap, width="stretch")
         st.caption("Grijze cellen = geen overschrijding.")
     
     st.divider()
@@ -132,13 +132,13 @@ else:
             hoverinfo="label+text"
         ))
         fig_sun.update_layout(margin=dict(t=30, l=0, r=0, b=10), title=f"Overschrijdingen: {selected_mp}", height=500)
-        st.plotly_chart(fig_sun, use_container_width=True)
+        st.plotly_chart(fig_sun, width="stretch")
 
     with col_list:
         st.markdown(f"**Details ({selected_mp})**")
         st_display = df_mp_fail[['Jaar', 'Stof', 'Normtype', 'Factor']].sort_values(by=['Factor', 'Stof', 'Jaar'], ascending=[False, True, False])
         st.dataframe(
-            st_display, use_container_width=True, hide_index=True,
+            st_display, width="stretch", hide_index=True,
             column_config={
                 "Factor": st.column_config.ProgressColumn("Factor (x norm)", format="%.1f x", min_value=0, max_value=5),
                 "Jaar": st.column_config.NumberColumn("Jaar", format="%d")
@@ -173,19 +173,19 @@ with col_kpi:
 
 with col_gauges:
     s1, s2 = st.columns(2)
-    s1.plotly_chart(create_gauge(pct_jg_total, "Totaal: voldoet JG (%)"), use_container_width=True)
-    s2.plotly_chart(create_gauge(pct_mac_total, "Totaal: voldoet MAC (%)"), use_container_width=True)
+    s1.plotly_chart(create_gauge(pct_jg_total, "Totaal: voldoet JG (%)"), width="stretch")
+    s2.plotly_chart(create_gauge(pct_mac_total, "Totaal: voldoet MAC (%)"), width="stretch")
 
 with col_map:
     df_map = df_filtered[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().dropna()
     if not df_map.empty:
-        fig_map = px.scatter_mapbox(
+        fig_map = px.scatter_map(
             df_map, lat='Latitude', lon='Longitude', hover_name='Meetpunt',
-            size_max=15, zoom=8, mapbox_style="open-street-map"
+            size_max=15, zoom=8, map_style="open-street-map"
         )
         fig_map.update_traces(marker=dict(size=12, color='red'))
         fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-        st.plotly_chart(fig_map, use_container_width=True)
+        st.plotly_chart(fig_map, width="stretch")
 
 st.divider()
 
@@ -204,24 +204,38 @@ with st.expander(f"Toon detailmeters voor alle {len(unieke_meetpunten)} meetpunt
 
         st.markdown(f"**{mp}**")
         c1, c2 = st.columns(2)
-        if pd.notna(p_jg): c1.plotly_chart(create_gauge(p_jg, f"JG: {mp}", 95), use_container_width=True, key=f"g_jg_{mp}")
-        if pd.notna(p_mac): c2.plotly_chart(create_gauge(p_mac, f"MAC: {mp}", 95), use_container_width=True, key=f"g_mac_{mp}")
+        if pd.notna(p_jg): c1.plotly_chart(create_gauge(p_jg, f"JG: {mp}", 95), width="stretch", key=f"g_jg_{mp}")
+        if pd.notna(p_mac): c2.plotly_chart(create_gauge(p_mac, f"MAC: {mp}", 95), width="stretch", key=f"g_mac_{mp}")
 
 st.markdown("---")
 st.subheader("⚠️ Meest recente overschrijdingen")
 
-mask_any_over = (df_filtered['Waarde'] > df_filtered['JG_MKN']) | (df_filtered['Waarde'] > df_filtered['MAC_MKN'])
-df_violations = df_filtered[mask_any_over].copy()
+# Vergelijk alleen met beschikbare normen. Ontbrekende normen (pd.NA) gelden niet
+# als overschrijding en worden vóór boolean-evaluatie expliciet False gemaakt.
+jg_over = (df_filtered['Waarde'] > df_filtered['JG_MKN']).fillna(False).astype(bool)
+mac_over = (df_filtered['Waarde'] > df_filtered['MAC_MKN']).fillna(False).astype(bool)
+mask_any_over = jg_over | mac_over
+
+df_violations = df_filtered.loc[mask_any_over].copy()
 
 if not df_violations.empty:
-    df_violations['Type'] = np.where(
-        (df_violations['Waarde'] > df_violations['JG_MKN']) & (df_violations['Waarde'] > df_violations['MAC_MKN']), "JG+MAC",
-        np.where(df_violations['Waarde'] > df_violations['JG_MKN'], "JG", "MAC")
+    # Hergebruik de opgeschoonde maskers, zodat np.select uitsluitend echte booleans ontvangt.
+    jg_over_violations = jg_over.loc[df_violations.index]
+    mac_over_violations = mac_over.loc[df_violations.index]
+
+    df_violations['Type'] = np.select(
+        [
+            (jg_over_violations & mac_over_violations).to_numpy(dtype=bool),
+            jg_over_violations.to_numpy(dtype=bool),
+            mac_over_violations.to_numpy(dtype=bool),
+        ],
+        ['JG+MAC', 'JG', 'MAC'],
+        default='Onbekend',
     )
     st.dataframe(
         df_violations[['Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'JG_MKN', 'MAC_MKN', 'Type']]
         .sort_values('Datum', ascending=False).head(15),
-        use_container_width=True
+        width="stretch"
     )
 else:
     st.success("Geen overschrijdingen gevonden.")
