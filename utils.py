@@ -10,17 +10,21 @@ from datetime import datetime
 DATA_FILE_PATH = 'IJG Chemie.csv'
 NORMEN_FILE_PATH = 'KRW stoffen koppeltabel.csv'
 PFAS_FILE_PATH = 'PFAS PEQ koppeltabel.csv'
+SIGNALERINGSWAARDEN_FILE_PATH = 'Signaleringswaarden koppeltabel.csv'
+ACHTERGRONDCORRECTIE_FILE_PATH = 'Achtergrondcorrectie koppeltabel.csv'
 
 STOFGROEPEN_MAPPING = {
     'PFAS': [
         'perfluor', 'genx', 'adona', 'pfhpa', 'fluortelomeer', 'pfas', '9-chloorhexadecaanfluor-3-oxanon-1-sulfonzuur',
         'trifluor', 'tridecafluor', '10:2', '8:2', '6:2', '4:2', '11-chlooreicosafluor-3-oxaundecaan-1-sulfonzuur',
-        'som hexadecafluor-2-deceenzuur-isomerenâ'
+        'som hexadecafluor-2-deceenzuur-isomerenâ', "2,3,3,3-tetrafluorpropaanzuur"
     ],
     'PAKs/PCBs/PBDEs': [
         'naftaleen', 'antraceen', 'fenantreen', 'fluorantheen', 'benzo(a)', 'benzo(g', 'benzo(k',
         'chryseen', 'pyreen', 'dibenzo', 'indeno', 'benzo(b)', 'pcb', 'broomdiphenylether',
-        'broomdifenylether', 'chloorbifenyl', 'acenaftyleen'
+        'broomdifenylether', 'chloorbifenyl', 'acenaftyleen', 'acenafteen', 'fluoreen', "3,4,4',5-tetrachlorobifenyl",
+        "2,3,3',4,4',5,5 '-heptachlorobifenyl", 'som 29 dioxines en dioxineachtige verbindingen', "som pbb153 en pbde154",
+        "som hbcd (technisch mengsel, niet-gespecif. broom-posities)"
     ],
     'Bestrijdingsmiddelen': [
         'glyfosaat', 'ampa', 'metolachloor', 'imidacloprid', 'mcpa', 'mecoprop', 'terbutylazine',
@@ -37,7 +41,13 @@ STOFGROEPEN_MAPPING = {
         'esfenvaleraat', 'parathion', 'fenitrothion', 'fenthion', 'fipronil', 'fluconazol',
         'glufosinaat', 'cyhalothrin', 'trifluraline', 'triazool', '3-(hydroxymethylfosfinoyl)propionzuur',
         'dinoterb', 'heptenofos', 'metabenzthiazuron', "4,4'-dichloordifenyltrichloorethaan",
-        "2,4'-dichloordifenyltrichloorethaan" 
+        "2,4'-dichloordifenyltrichloorethaan", 'penconazool', 'acetamiprid', 'thiamethoxam', 'methiocarb',
+         'cyprodinil', 'bromacil', 'diethyltoluamide', 'chloorprofam', 'propyzamide', 'propamocarb', 'propoxur',
+         'prosulfocarb', 'etridiazol', 'ethofumesaat', 'carbendazim', 'clomazon', '2,6-dichloorbenzamide',
+         'aldicarb', 'triallaat', 'triclosan', 'imazalil', 'ipconazole', 'prochloraz', 'tebuconazol', 
+         'tetraconazool', 'metaflumizon', 'dimoxystrobine', 'metconazool', 'clothianidine',
+         'cyazofamide', 'bromuconazool', 'difenoconazool', 'amisulbrom', 'etoxazool', 'ketoconazol',
+         'epoxiconazool', 'mefentrifluconazool', 'triticonazool', 'dichlobenil'
     ],
     'Geneesmiddelen': [
         'diclofenac', 'carbamazepine', 'metformine', 'tramadol', 'paracetamol', 'gadobutrol',
@@ -52,7 +62,10 @@ STOFGROEPEN_MAPPING = {
         'sulfadiazine', 'sulfadimidine', 'sulfamethoxazol', 'sulfapyridine', 'sulfaquinoxaline',
         'tiamuline', 'trimethoprim', 'valsartan', 'venlafaxine', 'chlooramfenicol', 'cyclofosfamide',
         'guanylureum', 'avobenzone', 'octocrilene', 'paroxetine', 'fluoxetine', 'fenofibrinezuur',
-        'gabapentine'
+        'gabapentine', 'gadoversetamide', 'gadodiamide', 'citalopram', 'valium', 'candesartan',
+        'bisoprolol', 'gadoteerzuur', 'gadoxeetzuur', 'gadobeenzuur', 'famoxadone', 'acetylcedreen',
+        'sandacanol', 'oxytetracycline', 'clotrimazol', '17beta-estradiol', 'oestron', 'ethinylestradiol',
+        'amiodaron', 'climbazole', 'norfloxacine', 'tetracycline', 'tylosine'
     ],
 
     'Vluchtige organische stoffen': [
@@ -61,20 +74,23 @@ STOFGROEPEN_MAPPING = {
         'ether', 'disulfide', 'hydrine', 'etheen', 'chloortolueen', 'propylbenzeen', 'tetrahydrofuran',
         '1,2-dimethoxyethaan', '1,1,2,2-tetrachloorethaan', '1,3-dichloorpropaan', '1,2-dichloorpropaan',
         '3-chloorpropeen', '1,2,3-trichloorpropaan', '1,1,1-trichloorethaan', '1,1,2-trichloorethaan',
-        'tetrachloorethaan'
+        'tetrachloorethaan', 'propanol'
     ],
     'Industrie & overigen': [
         'bisfenol', 'chloorbenzeen', 'chloorfenol', 'nitrofenol', 'dtpa', 'methacrylaat', 'nitrilotriazijnzuur',
         'edta', 'pyrazol', 'melamine', 'difenol', 'cyaanguanidine', 'cyanuurzuur', 'urotropine',
         'ftalaat', 'acesulfaam', 'cyclamaat', 'saccharine', 'sucralose', 'tributylfosfaat', 'vinylchloride',
-        '4-tertiair-octylfenol', 'som 4-nonylfenol-isomeren (vertakt)', 'melamine', 'trifenylfosfaat'
+        '4-tertiair-octylfenol', 'som 4-nonylfenol-isomeren (vertakt)', 'melamine', 'trifenylfosfaat',
+        'trifenylfosfineoxide', '5-acetyl-1,1,2,3,3,6-hexamethylindaan', 'verdyl acetaat', 'tonalide',
+        'traseolide', 'verdox', 'celestolide', 'galaxolide', 'antrachinon', 'cashmeran', 'isoforon',
+        '1,4-dioxaan', 'chloorxylenol', 'amberonne', 'hexahydrohexamethylcyclopentabenzopyran (hhcb)'
     ],
     'Nutriënten & algemeen': [
         'fluoride', 'zuurstof', 'chlorofyl', 'silicium', 'sulfaat', 'koolstof', 'stikstof',
         'nitraat', 'nitriet', 'ammonium', 'fosfor', 'fosfaat', 'chloride', 'zwevende stof',
         'hardheid', 'temperatuur', 'zuurgraad', 'geleidbaarheid', 'gloeirest', 'onopgeloste',
         'doorzicht', 'saliniteit', 'troebelheid', 'cyanide', 'bicarbonaat', 'waterstofcarbonaat',
-        'extinctie'
+        'extinctie', 'kleur', 'geur', 'olie', 'schuim', 'vuil', 'escherichia coli'
     ],
     'Metalen & elementen': [
         'aluminium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor', 'cadmium', 'calcium',
@@ -85,23 +101,238 @@ STOFGROEPEN_MAPPING = {
         'lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium', 'platina', 'praseodymium',
         'rubidium', 'samarium', 'tantalium', 'tellurium', 'terbium', 'thorium', 'thulium',
         'wolfraam', 'ytterbium', 'yttrium', 'zirkonium', 'titaan', 'scandium', 'arsenaat',
-        'arseniet', 'selenaat', 'seleniet'
+        'arseniet', 'selenaat', 'seleniet', 'totaal beta', 'rest beta', 'totaal alfa', 'tritium'
     ],
 }
 
 UITGESLOTEN_ELEMENTEN = [
-    'aluminium', 'ammonium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor',
-    'cadmium', 'cerium', 'cesium', 'chloride', 'chroom', 'calcium', 'cobalt', 'kobalt', 'koper', 'kwik',
-    'lood', 'magnesium', 'mangaan', 'molybdeen', 'natrium', 'nikkel', 'dysprosium', 'erbium', 'europium',
-    'kalium', 'seleen', 'silicium', 'strontium', 'thallium', 'tin', 'gadolinium', 'gallium', 'hafnium',
-    'titanium', 'uranium', 'vanadium', 'ijzer', 'zilver', 'zink', 'holmium', 'indium', 'koolstof organisch',
-    'lanthaan', 'lithium', 'lutetium', 'neodymium', 'niobium', 'nitraat', 'nitriet', 'platina', 'praseodymium',
-    'rubidium', 'samarium', 'siliciumdioxide', 'sulfaat', 'tantalium', 'tellurium',
-    'terbium', 'thallium', 'thorium', 'thulium', 'wolfraam', 'ytterbium', 'yttrium', 'zirkonium',
-    'titaan', 'scandium', 'chlorofyl-a'
+    'aluminium', 'ammonium', 'antimoon', 'barium', 'boor', 'rubidium',
+    'cerium', 'chloride', 'calcium','magnesium', 'mangaan', 'molybdeen', 'natrium',
+    'kalium', 'silicium', 'strontium', 'gadolinium', 'titanium', 'ijzer', 'zink', 'koolstof organisch',
+    'lithium', 'nitraat', 'nitriet', 'siliciumdioxide', 'sulfaat', 'titaan', 'scandium', 'chlorofyl-a',
+    'som extraheerbare organische halogeenverbindingen', 'dysprosium', 'cesium', 'ytterbium'
 ]
 
 # --- FUNCTIES ---
+
+@st.cache_data
+def load_signaleringswaarden() -> pd.DataFrame:
+    """Laadt en valideert stofspecifieke signaleringswaarden in ug/l."""
+    vereiste_kolommen = {'stofnaam', 'signaleringswaarde'}
+
+    try:
+        df_signalering = pd.read_csv(
+            SIGNALERINGSWAARDEN_FILE_PATH,
+            delimiter=',',
+            encoding='utf-8-sig',
+            dtype='string',
+            low_memory=False,
+        )
+    except FileNotFoundError:
+        st.error(
+            "Signaleringswaardentabel niet gevonden op pad: "
+            f"{SIGNALERINGSWAARDEN_FILE_PATH}. Voor niet-uitgesloten stoffen "
+            "zonder JG-MKN wordt daarom de generieke waarde van 0,1 ug/l gebruikt."
+        )
+        return pd.DataFrame(columns=['stofnaam', 'signaleringswaarde'])
+    except pd.errors.ParserError as exc:
+        raise ValueError(
+            "Signaleringswaardentabel kan niet als CSV worden gelezen. "
+            "Controleer komma's en aanhalingstekens."
+        ) from exc
+
+    df_signalering.columns = (
+        df_signalering.columns.astype(str).str.strip().str.casefold()
+    )
+    ontbrekende_kolommen = vereiste_kolommen - set(df_signalering.columns)
+    if ontbrekende_kolommen:
+        raise ValueError(
+            "Ontbrekende kolommen in de signaleringswaardentabel: "
+            + ", ".join(sorted(ontbrekende_kolommen))
+        )
+
+    df_signalering = df_signalering[
+        ['stofnaam', 'signaleringswaarde']
+    ].copy()
+    df_signalering['stofnaam'] = (
+        df_signalering['stofnaam'].astype('string').str.strip().str.casefold()
+    )
+    df_signalering['signaleringswaarde'] = (
+        df_signalering['signaleringswaarde']
+        .astype('string')
+        .str.strip()
+        .str.replace(',', '.', regex=False)
+    )
+    df_signalering['signaleringswaarde'] = pd.to_numeric(
+        df_signalering['signaleringswaarde'], errors='coerce'
+    )
+
+    ongeldige_rijen = (
+        df_signalering['stofnaam'].isna()
+        | df_signalering['stofnaam'].eq('')
+        | df_signalering['signaleringswaarde'].isna()
+        | df_signalering['signaleringswaarde'].le(0)
+    )
+    if ongeldige_rijen.any():
+        regelnummers = (df_signalering.index[ongeldige_rijen] + 2).tolist()
+        raise ValueError(
+            "Ongeldige stofnaam of signaleringswaarde op CSV-regel(s): "
+            + ", ".join(map(str, regelnummers))
+        )
+
+    dubbele_stoffen = df_signalering.loc[
+        df_signalering['stofnaam'].duplicated(keep=False), 'stofnaam'
+    ].unique()
+    if len(dubbele_stoffen) > 0:
+        raise ValueError(
+            "Dubbele stoffen in de signaleringswaardentabel: "
+            + ", ".join(sorted(map(str, dubbele_stoffen)))
+        )
+
+    return df_signalering
+
+@st.cache_data
+def load_achtergrondcorrecties() -> pd.DataFrame:
+    """Laadt en valideert natuurlijke achtergrondconcentraties per stof."""
+    kolommen = ['stofnaam', 'achtergrondconcentratie', 'eenheid']
+    vereiste_kolommen = set(kolommen)
+
+    try:
+        df_achtergrond = pd.read_csv(
+            ACHTERGRONDCORRECTIE_FILE_PATH,
+            delimiter=',',
+            encoding='utf-8-sig',
+            dtype='string',
+            low_memory=False,
+        )
+    except FileNotFoundError:
+        st.warning(
+            "Achtergrondcorrectietabel niet gevonden op pad: "
+            f"{ACHTERGRONDCORRECTIE_FILE_PATH}. Er wordt geen "
+            "achtergrondcorrectie toegepast."
+        )
+        return pd.DataFrame(columns=kolommen)
+    except pd.errors.ParserError as exc:
+        raise ValueError(
+            "Achtergrondcorrectietabel kan niet als CSV worden gelezen. "
+            "Controleer komma's en aanhalingstekens."
+        ) from exc
+
+    df_achtergrond.columns = (
+        df_achtergrond.columns.astype(str).str.strip().str.casefold()
+    )
+    ontbrekende_kolommen = vereiste_kolommen - set(df_achtergrond.columns)
+    if ontbrekende_kolommen:
+        raise ValueError(
+            "Ontbrekende kolommen in de achtergrondcorrectietabel: "
+            + ", ".join(sorted(ontbrekende_kolommen))
+        )
+
+    df_achtergrond = df_achtergrond[kolommen].copy()
+    df_achtergrond['stofnaam'] = (
+        df_achtergrond['stofnaam'].astype('string').str.strip().str.casefold()
+    )
+    df_achtergrond['eenheid'] = (
+        df_achtergrond['eenheid']
+        .astype('string')
+        .str.strip()
+        .str.casefold()
+        .str.replace('µ', 'u', regex=False)
+        .str.replace('μ', 'u', regex=False)
+    )
+    df_achtergrond['achtergrondconcentratie'] = (
+        df_achtergrond['achtergrondconcentratie']
+        .astype('string')
+        .str.strip()
+        .str.replace(',', '.', regex=False)
+    )
+    df_achtergrond['achtergrondconcentratie'] = pd.to_numeric(
+        df_achtergrond['achtergrondconcentratie'], errors='coerce'
+    )
+
+    ongeldige_rijen = (
+        df_achtergrond['stofnaam'].isna()
+        | df_achtergrond['stofnaam'].eq('')
+        | df_achtergrond['eenheid'].isna()
+        | df_achtergrond['eenheid'].eq('')
+        | df_achtergrond['achtergrondconcentratie'].isna()
+        | df_achtergrond['achtergrondconcentratie'].lt(0)
+    )
+    if ongeldige_rijen.any():
+        regelnummers = (df_achtergrond.index[ongeldige_rijen] + 2).tolist()
+        raise ValueError(
+            "Ongeldige achtergrondcorrectie op regel(s): "
+            + ", ".join(map(str, regelnummers))
+        )
+
+    dubbele_sleutels = df_achtergrond.duplicated(
+        subset=['stofnaam', 'eenheid'], keep=False
+    )
+    if dubbele_sleutels.any():
+        dubbele_combinaties = (
+            df_achtergrond.loc[dubbele_sleutels, ['stofnaam', 'eenheid']]
+            .astype(str)
+            .agg(' / '.join, axis=1)
+            .unique()
+        )
+        raise ValueError(
+            "Dubbele stof/eенheid-combinaties in de achtergrondcorrectietabel: "
+            + ", ".join(sorted(dubbele_combinaties))
+        )
+
+    return df_achtergrond
+
+
+def apply_achtergrondcorrectie(df: pd.DataFrame) -> pd.DataFrame:
+    """Past achtergrondcorrectie toe en bewaart de oorspronkelijke meetwaarde."""
+    resultaat = df.copy()
+    resultaat['Waarde_Origineel'] = resultaat['Waarde'].copy()
+    resultaat['Achtergrondconcentratie'] = np.nan
+    resultaat['Achtergrondcorrectie_Toegepast'] = False
+
+    df_achtergrond = load_achtergrondcorrecties()
+    if df_achtergrond.empty:
+        return resultaat
+
+    basisstofnaam = (
+        resultaat['Stof']
+        .astype(str)
+        .str.replace(r' \(totaal\)| \(opgelost\)', '', regex=True)
+        .str.strip()
+        .str.casefold()
+    )
+    eenheid_norm = (
+        resultaat['Eenheid']
+        .astype(str)
+        .str.strip()
+        .str.casefold()
+        .str.replace('µ', 'u', regex=False)
+        .str.replace('μ', 'u', regex=False)
+    )
+
+    achtergrond_map = df_achtergrond.set_index(
+        ['stofnaam', 'eenheid']
+    )['achtergrondconcentratie']
+    koppelsleutel = pd.MultiIndex.from_arrays(
+        [basisstofnaam, eenheid_norm], names=['stofnaam', 'eenheid']
+    )
+    gekoppelde_achtergrond = pd.Series(
+        achtergrond_map.reindex(koppelsleutel).to_numpy(),
+        index=resultaat.index,
+        dtype='float64',
+    )
+    masker = gekoppelde_achtergrond.notna()
+
+    resultaat.loc[masker, 'Achtergrondconcentratie'] = (
+        gekoppelde_achtergrond.loc[masker]
+    )
+    resultaat.loc[masker, 'Waarde'] = (
+        resultaat.loc[masker, 'Waarde_Origineel']
+        - gekoppelde_achtergrond.loc[masker]
+    ).clip(lower=0)
+    resultaat.loc[masker, 'Achtergrondcorrectie_Toegepast'] = True
+    return resultaat
+
 
 def match_stofgroep_optimized(unieke_stoffen):
     mapping = {}
@@ -385,18 +616,60 @@ def load_data():
     if 'JG_MKN' not in df.columns: df['JG_MKN'] = np.nan
     
     df['KRW_Norm'] = df['JG_MKN']
+
+    # Pas de achtergrondcorrectie centraal toe. Alle vervolgfuncties en pagina's
+    # gebruiken daarna de gecorrigeerde kolom 'Waarde'; de bronwaarde blijft
+    # beschikbaar in 'Waarde_Origineel'.
+    df = apply_achtergrondcorrectie(df)
+
     df['Signaleringswaarde'] = np.nan
 
-    base_stofnaam = df['Stof'].str.replace(r' \(totaal\)| \(opgelost\)', '', regex=True).str.strip()
-    is_metaal_of_element = base_stofnaam.isin(UITGESLOTEN_ELEMENTEN)
+    # Koppel op de basisstofnaam, zodat '(totaal)' en '(opgelost)'
+    # automatisch dezelfde stofspecifieke signaleringswaarde krijgen.
+    base_stofnaam = (
+        df['Stof']
+        .astype(str)
+        .str.replace(r' \(totaal\)| \(opgelost\)', '', regex=True)
+        .str.strip()
+        .str.casefold()
+    )
+    eenheid_is_ug_l = (
+        df['Eenheid'].astype(str).str.strip().str.casefold().eq('ug/l')
+    )
+    heeft_geen_jg_mkn = df['JG_MKN'].isna()
+    uitgesloten_elementen = {
+        str(stof).strip().casefold()
+        for stof in UITGESLOTEN_ELEMENTEN
+    }
 
-    masker = (
-        df['JG_MKN'].isna() &
-        (df['Eenheid'].astype(str).str.lower() == 'ug/l') &
-        (~is_metaal_of_element)
+    df_signalering = load_signaleringswaarden()
+    signaleringswaarde_map = df_signalering.set_index(
+        'stofnaam'
+    )['signaleringswaarde']
+    gekoppelde_signaleringswaarde = base_stofnaam.map(
+        signaleringswaarde_map
     )
 
-    df.loc[masker, 'Signaleringswaarde'] = 0.1
+    # Een match uit de koppeltabel heeft voorrang, met behoud van de bestaande
+    # voorwaarden: alleen ug/l en alleen wanneer geen JG-MKN beschikbaar is.
+    masker_gekoppeld = (
+        heeft_geen_jg_mkn
+        & eenheid_is_ug_l
+        & gekoppelde_signaleringswaarde.notna()
+    )
+    df.loc[masker_gekoppeld, 'Signaleringswaarde'] = (
+        gekoppelde_signaleringswaarde.loc[masker_gekoppeld]
+    )
+
+    # Bij geen match blijft de generieke 0,1 ug/l gelden, behalve voor de
+    # stoffen die expliciet in UITGESLOTEN_ELEMENTEN staan.
+    masker_generiek = (
+        heeft_geen_jg_mkn
+        & eenheid_is_ug_l
+        & gekoppelde_signaleringswaarde.isna()
+        & ~base_stofnaam.isin(uitgesloten_elementen)
+    )
+    df.loc[masker_generiek, 'Signaleringswaarde'] = 0.1
 
     st.session_state.last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -651,12 +924,12 @@ def calculate_compliance_details(df_in: pd.DataFrame) -> pd.DataFrame:
         
     df_calc['Jaar'] = df_calc['Datum'].dt.year
 
-    jg_means = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'JG_MKN'])['Waarde'].mean().reset_index()
+    jg_means = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'JG_MKN'], observed=True)['Waarde'].mean().reset_index()
     jg_failures = jg_means[jg_means['Waarde'] > jg_means['JG_MKN']].copy()
     jg_failures['Normtype'] = 'JG-MKN'
     jg_failures['Factor'] = jg_failures['Waarde'] / jg_failures['JG_MKN']
 
-    mac_maxs = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'MAC_MKN'])['Waarde'].max().reset_index()
+    mac_maxs = df_calc.groupby(['Meetpunt', 'Jaar', 'Stof', 'MAC_MKN'], observed=True)['Waarde'].max().reset_index()
     mac_failures = mac_maxs[mac_maxs['Waarde'] > mac_maxs['MAC_MKN']].copy()
     mac_failures['Normtype'] = 'MAC-MKN'
     mac_failures['Factor'] = mac_failures['Waarde'] / mac_failures['MAC_MKN']
@@ -685,16 +958,37 @@ def prepare_heatmap_data(df_filtered: pd.DataFrame):
     df_source['MaxFactor_Meting'] = np.maximum(s_factor_jg, s_factor_mac)
     df_source.loc[df_source['MaxFactor_Meting'] <= 1.0, 'MaxFactor_Meting'] = 0.0
 
-    is_jg_over = (df_source['Waarde'] > df_source['JG_MKN']) & (df_source['JG_MKN'] > 0)
-    is_mac_over = (df_source['Waarde'] > df_source['MAC_MKN']) & (df_source['MAC_MKN'] > 0)
+    # Bepaal overschrijdingen uitsluitend wanneer zowel meetwaarde als norm
+    # bruikbaar zijn. Ontbrekende waarden/normen zijn geen vastgestelde
+    # overschrijding en worden daarom expliciet False. Dit voorkomt tevens
+    # nullable booleans (pd.NA/NaN) in de aggregatie hieronder.
+    is_jg_over = (
+        df_source['Waarde'].notna()
+        & df_source['JG_MKN'].notna()
+        & df_source['JG_MKN'].gt(0)
+        & df_source['Waarde'].gt(df_source['JG_MKN'])
+    ).fillna(False).astype(bool)
+    is_mac_over = (
+        df_source['Waarde'].notna()
+        & df_source['MAC_MKN'].notna()
+        & df_source['MAC_MKN'].gt(0)
+        & df_source['Waarde'].gt(df_source['MAC_MKN'])
+    ).fillna(False).astype(bool)
 
-    df_annual = df_source.groupby(['Stof', 'Meetpunt', 'Jaar']).agg(
-        Fail_JG=('Waarde', lambda x: is_jg_over.loc[x.index].any()),
-        Fail_MAC=('Waarde', lambda x: is_mac_over.loc[x.index].any())
+    df_annual = df_source.groupby(
+        ['Stof', 'Meetpunt', 'Jaar'], observed=True
+    ).agg(
+        Fail_JG=('Waarde', lambda x: bool(is_jg_over.loc[x.index].any(skipna=True))),
+        Fail_MAC=('Waarde', lambda x: bool(is_mac_over.loc[x.index].any(skipna=True)))
     ).reset_index()
-    
-    df_annual['Fail_JG'] = df_annual['Fail_JG'].astype(bool)
-    df_annual['Fail_MAC'] = df_annual['Fail_MAC'].astype(bool)
+
+    # Verdedigende normalisatie voor lege/categorische groepen en toekomstige
+    # pandas-versies: de statuskolommen bevatten altijd uitsluitend bools.
+    for fail_col in ('Fail_JG', 'Fail_MAC'):
+        if fail_col not in df_annual.columns:
+            df_annual[fail_col] = False
+        else:
+            df_annual[fail_col] = df_annual[fail_col].fillna(False).astype(bool)
 
     conditions = [
         (df_annual['Fail_JG'] & df_annual['Fail_MAC']),
@@ -709,7 +1003,7 @@ def prepare_heatmap_data(df_filtered: pd.DataFrame):
     if df_annual_fails.empty:
         return None, None, [], []
 
-    df_text_parts = df_annual_fails.groupby(['Stof', 'Meetpunt', 'StatusType'])['Jaar'].apply(
+    df_text_parts = df_annual_fails.groupby(['Stof', 'Meetpunt', 'StatusType'],observed=True)['Jaar'].apply(
         lambda x: ", ".join(map(str, sorted(x.dropna().astype(int).unique())))
     ).reset_index(name='JarenStr')
 
@@ -719,11 +1013,11 @@ def prepare_heatmap_data(df_filtered: pd.DataFrame):
     df_text_parts['StatusType'] = df_text_parts['StatusType'].astype(status_order)
     df_text_parts = df_text_parts.sort_values(['Stof', 'Meetpunt', 'StatusType'])
 
-    df_viz_text = df_text_parts.groupby(['Stof', 'Meetpunt'])['FullText'].apply(
+    df_viz_text = df_text_parts.groupby(['Stof', 'Meetpunt'], observed=True)['FullText'].apply(
         lambda x: '<br>'.join(x.dropna().astype(str))
     ).reset_index(name='CellText')
 
-    df_viz_factor = df_source.groupby(['Stof', 'Meetpunt'])['MaxFactor_Meting'].max().reset_index(name='MaxFactor')
+    df_viz_factor = df_source.groupby(['Stof', 'Meetpunt'], observed=True)['MaxFactor_Meting'].max().reset_index(name='MaxFactor')
 
     violating_keys = df_viz_factor[df_viz_factor['MaxFactor'] > 1.0][['Stof', 'Meetpunt']]
     if violating_keys.empty:

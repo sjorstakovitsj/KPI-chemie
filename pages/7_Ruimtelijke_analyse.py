@@ -11,12 +11,16 @@ st.header("Ruimtelijke analyse")
 
 # Data en Sidebar
 df_main = load_data()
+
+# Stel op deze pagina de mediaan als standaard in, maar respecteer een
+# bestaande keuze van de gebruiker tijdens dezelfde Streamlit-sessie.
+st.session_state.setdefault("ruimtelijke_aggregatiemethode", "Mediaan")
 df_filtered = get_shared_sidebar(df_main)
 
 # De shared sidebar bewaart de gekozen methode in session_state, zodat de
 # bestaande returnwaarde van get_shared_sidebar ongewijzigd blijft.
 aggregatiemethode = st.session_state.get(
-    "ruimtelijke_aggregatiemethode", "Gemiddelde"
+    "ruimtelijke_aggregatiemethode", "Mediaan"
 )
 agg_func = "median" if aggregatiemethode == "Mediaan" else "mean"
 agg_label = "Mediaan" if agg_func == "median" else "Gemiddelde"
@@ -58,8 +62,20 @@ with st.container():
     sel_loc = c_loc.multiselect("Meetpunt", loc_opts, default=loc_opts)
 
     # 2. Stofgroep Selectie
-    grp_opts = sorted(df_space['Stofgroep'].unique())
-    sel_grp = c_grp.multiselect("Stofgroep", grp_opts, default=[grp_opts[0]] if grp_opts else None)
+    grp_opts = sorted(df_space['Stofgroep'].dropna().unique())
+    gewenste_stofgroep = "Nutriënten & algemeen"
+    standaard_stofgroep = next(
+        (
+            optie for optie in grp_opts
+            if str(optie).strip().casefold() == gewenste_stofgroep.casefold()
+        ),
+        grp_opts[0] if grp_opts else None,
+    )
+    sel_grp = c_grp.multiselect(
+        "Stofgroep",
+        grp_opts,
+        default=[standaard_stofgroep] if standaard_stofgroep is not None else [],
+    )
 
     # --- DYNAMISCHE STOF OPTIES LOGICA ---
     # We berekenen hier welke stoffen beschikbaar zijn op basis van ALLE voorgaande filters
@@ -88,7 +104,26 @@ with st.container():
     stof_opts = sorted(df_space.loc[mask_opt, 'Stof'].unique())
 
     # 3. Stof Selectie
-    sel_stof = c_stof.multiselect("Stof", stof_opts, default=stof_opts[:1] if stof_opts else [])
+    gewenste_stoffen = [
+        "doorzicht",
+        "fosfor totaal (totaal)",
+        "stikstof totaal",
+        "totaal organisch koolstof",
+    ]
+    stof_lookup = {
+        str(optie).strip().casefold(): optie
+        for optie in stof_opts
+    }
+    standaard_stoffen = [
+        stof_lookup[stofnaam.casefold()]
+        for stofnaam in gewenste_stoffen
+        if stofnaam.casefold() in stof_lookup
+    ]
+    sel_stof = c_stof.multiselect(
+        "Stof",
+        stof_opts,
+        default=standaard_stoffen,
+    )
 
 # --- DATA FILTERING LOGICA (VECTORIZED) ---
 # Nu passen we de filters definitief toe voor de grafieken.

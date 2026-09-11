@@ -14,6 +14,84 @@ from utils import (
 st.set_page_config(layout="wide", page_title="Waterkwaliteit KPI Dashboard", page_icon="💧")
 st.title("💧 Dashboard chemische waterkwaliteit MN")
 
+# Beheer toekomstige updates door uitsluitend nieuwe dictionaries bovenaan
+# deze lijst toe te voegen. De nieuwste update staat altijd als eerste.
+APP_UPDATES = [
+    {
+        "datum": "11 september 2026",
+        "titel": "Betere norm- en risicobeoordeling",
+        "wijzigingen": [
+            "Stofspecifieke signaleringswaarden worden nu centraal beheerd via een koppeltabel.",
+            "Als geen stofspecifieke signaleringswaarde beschikbaar is, blijft voor geschikte stoffen de generieke waarde van 0,1 µg/l gelden.",
+            "Metingen van geselecteerde metalen worden gecorrigeerd voor de natuurlijke achtergrondconcentratie.",
+            "De oorspronkelijke meetwaarde blijft beschikbaar, zodat de achtergrondcorrectie controleerbaar is.",
+            "De KRW-check, jaargemiddelden, MAC-controle, gauges en overschrijdingstabellen gebruiken de gecorrigeerde concentraties.",
+            "In Home en KRW normcheck is zichtbaar hoeveel meetregels zijn gecorrigeerd en welke waarden zijn gebruikt.",
+            "De verwerking en validatie van koppeltabellen en categorische gegevens is robuuster en toekomstbestendiger gemaakt.",
+        ],
+    },
+]
+
+
+@st.dialog("Wat is er nieuw?", width="large")
+def toon_updatevenster():
+    """Toont één update per venster met navigatie door de updatehistorie."""
+    maximaal_index = max(len(APP_UPDATES) - 1, 0)
+    huidig_index = min(
+        max(int(st.session_state.get("update_index", 0)), 0),
+        maximaal_index,
+    )
+    st.session_state.update_index = huidig_index
+    update = APP_UPDATES[huidig_index]
+
+    st.subheader(update["titel"])
+    st.caption(
+        f"Update van {update['datum']}  |  "
+        f"{huidig_index + 1} van {len(APP_UPDATES)}"
+    )
+    for wijziging in update["wijzigingen"]:
+        st.markdown(f"- {wijziging}")
+
+    st.divider()
+    vorige_col, sluit_col, volgende_col = st.columns([1, 2, 1])
+
+    with vorige_col:
+        if st.button(
+            "← Nieuwere update",
+            disabled=huidig_index == 0,
+            width="stretch",
+        ):
+            st.session_state.update_index = huidig_index - 1
+            st.rerun()
+
+    with sluit_col:
+        if st.button("Sluiten", type="primary", width="stretch"):
+            st.session_state.updatevenster_open = False
+            st.rerun()
+
+    with volgende_col:
+        if st.button(
+            "Oudere update →",
+            disabled=huidig_index >= maximaal_index,
+            width="stretch",
+        ):
+            st.session_state.update_index = huidig_index + 1
+            st.rerun()
+
+
+if "updatevenster_open" not in st.session_state:
+    st.session_state.updatevenster_open = True
+if "update_index" not in st.session_state:
+    st.session_state.update_index = 0
+
+if st.session_state.updatevenster_open:
+    toon_updatevenster()
+
+if st.button("Bekijk de laatste updates", key="open_updatevenster"):
+    st.session_state.update_index = 0
+    st.session_state.updatevenster_open = True
+    st.rerun()
+
 # 1. Data Laden
 df_main = load_data()
 
@@ -72,7 +150,23 @@ if len(available_years) >= 1:
 
 # 4. KRW-check & Heatmap
 st.header("🔴 KRW-check: overschrijdende stoffen")
-st.info("Achtergrondwaarde correctie is niet meegenomen in dit dashboard.")
+# De achtergrondcorrectie wordt centraal in utils.load_data() toegepast.
+# Toon hier transparant hoeveel meetregels in de huidige selectie zijn gecorrigeerd.
+if 'Achtergrondcorrectie_Toegepast' in df_filtered.columns:
+    aantal_gecorrigeerd = int(
+        df_filtered['Achtergrondcorrectie_Toegepast'].fillna(False).sum()
+    )
+    aantal_totaal = len(df_filtered)
+    st.info(
+        "Achtergrondcorrectie is centraal toegepast op "
+        f"{aantal_gecorrigeerd:,} van de {aantal_totaal:,} meetregels in de huidige selectie. "
+        "De oorspronkelijke concentratie blijft beschikbaar als 'Waarde_Origineel'."
+    )
+else:
+    st.warning(
+        "De kolom 'Achtergrondcorrectie_Toegepast' ontbreekt. "
+        "Controleer of de actuele utils.py en de achtergrondcorrectietabel worden gebruikt."
+    )
 
 # Compliance data berekenen (via Utils)
 df_failures = calculate_compliance_details(df_filtered)
@@ -232,10 +326,35 @@ if not df_violations.empty:
         ['JG+MAC', 'JG', 'MAC'],
         default='Onbekend',
     )
+    # Toon gecorrigeerde en oorspronkelijke concentraties wanneer beschikbaar.
+    violation_cols = ['Datum', 'Meetpunt', 'Stof']
+    if 'Waarde_Origineel' in df_violations.columns:
+        violation_cols.append('Waarde_Origineel')
+    if 'Achtergrondconcentratie' in df_violations.columns:
+        violation_cols.append('Achtergrondconcentratie')
+    violation_cols.append('Waarde')
+    if 'Achtergrondcorrectie_Toegepast' in df_violations.columns:
+        violation_cols.append('Achtergrondcorrectie_Toegepast')
+    violation_cols.extend(['Eenheid', 'JG_MKN', 'MAC_MKN', 'Type'])
+
     st.dataframe(
-        df_violations[['Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'JG_MKN', 'MAC_MKN', 'Type']]
+        df_violations[violation_cols]
         .sort_values('Datum', ascending=False).head(15),
-        width="stretch"
+        width="stretch",
+        column_config={
+            'Waarde_Origineel': st.column_config.NumberColumn(
+                'Oorspronkelijke concentratie', format='%.4g'
+            ),
+            'Achtergrondconcentratie': st.column_config.NumberColumn(
+                'Achtergrondconcentratie', format='%.4g'
+            ),
+            'Waarde': st.column_config.NumberColumn(
+                'Gecorrigeerde concentratie', format='%.4g'
+            ),
+            'Achtergrondcorrectie_Toegepast': st.column_config.CheckboxColumn(
+                'Achtergrondcorrectie toegepast'
+            ),
+        },
     )
 else:
     st.success("Geen overschrijdingen gevonden.")

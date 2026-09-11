@@ -1,0 +1,21 @@
+(G)UI
+algemeen: switch naar donker thema
+enkel met Lucky few delen
+
+Functionaliteit
+tab 8: toxische druk. 
+1. Toestand: msPAF totaal (%), chronische tox druk en acute tox druk in stoplichtindeling. per meetlocatie over verschillende jaren heen. voorbeeld bij herkomst stoffen tab
+2. jaargemiddelde, maandgemiddelden, regressielijn, aantal overschrijdingen drempelwaarde per jaar
+3. top 10 stoffen voor chronisch en acuut. relatieve bijdrage per stofgroep als pareto diagram
+4. hotspots locaties met structureel hoge msPAF, dominante stoffen, biologische respons
+
+tab 9: slider links/rechts met: links huidige situatie, rechts nieuwe situatie met middelen van meerdere meetpunten over een waterlichaam. Alleen middelen als het aantal metingen per meetpunt gelijk is. Daarnaast nog kijken welke informatieproducten. Sowieso fysische chemie. Daarnaast ook normoverschrijdingen. en nog een aantal
+tab 10: bronopsporing: toevoegen knoppen om bovenstroomse meetpunten te selecteren. Definieren van stroomgebieden, rijn-oost, rijn-west. zie voorbeeld krw viewer
+tab 11: inzicht in onderliggende database en downloadknop. Selectie van jaren en stofgroepen
+
+checks
+-
+
+longlist
+request manager: inloggen met verschillende rollen en verschillende dienstonderdelen
+back-end: database management of zelf inputbestand uploaden?

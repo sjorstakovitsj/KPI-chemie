@@ -14,6 +14,24 @@ df_filtered = get_shared_sidebar(df_main)
 
 st.header("✅ KRW normcheck per meetpunt")
 
+# De achtergrondcorrectie wordt centraal in utils.load_data() toegepast.
+# Deze pagina gebruikt daarom de gecorrigeerde kolom 'Waarde' voor zowel
+# de JG-MKN- als de MAC-MKN-toetsing.
+if 'Achtergrondcorrectie_Toegepast' in df_filtered.columns:
+    aantal_gecorrigeerd = int(
+        df_filtered['Achtergrondcorrectie_Toegepast'].fillna(False).sum()
+    )
+    st.info(
+        "Achtergrondcorrectie is toegepast op "
+        f"{aantal_gecorrigeerd:,} meetregels in de huidige jaarselectie. "
+        "De oorspronkelijke meetwaarden blijven beschikbaar voor controle."
+    )
+else:
+    st.warning(
+        "De kolom 'Achtergrondcorrectie_Toegepast' ontbreekt. "
+        "Controleer of de actuele utils.py en de achtergrondcorrectietabel worden gebruikt."
+    )
+
 col_filter_1, col_filter_2, col_filter_3 = st.columns(3)
 
 with col_filter_1:
@@ -137,12 +155,24 @@ else:
             # NIEUW: Forceer discrete weergave van jaartallen
             fig.update_xaxes(type='category', tickangle=0) 
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             
-        # Optioneel: Toon de data in een tabel
+        # Optioneel: Toon de gecorrigeerde jaargemiddelden in een tabel.
         with st.expander("Toon berekende jaargemiddelden in tabel"):
             display_cols = ['Jaar', 'Meetpunt', 'Stof', 'Waarde', 'JG_MKN']
-            st.dataframe(df_gemiddelde[display_cols].sort_values(['Stof', 'Jaar', 'Meetpunt']))
+            st.dataframe(
+                df_gemiddelde[display_cols]
+                .sort_values(['Stof', 'Jaar', 'Meetpunt']),
+                width='stretch',
+                column_config={
+                    'Waarde': st.column_config.NumberColumn(
+                        'Gecorrigeerd jaargemiddelde', format='%.4g'
+                    ),
+                    'JG_MKN': st.column_config.NumberColumn(
+                        'JG-MKN', format='%.4g'
+                    ),
+                },
+            )
 
     else:
         st.info("Geen data beschikbaar met JG-MKN norm voor de huidige selectie (of alles weggefilterd door >RG filter).")
@@ -179,7 +209,44 @@ else:
             color='Meetpunt',
             color_continuous_scale=px.colors.sequential.Reds
         )
-        st.plotly_chart(fig_mac, use_container_width=True)
+        st.plotly_chart(fig_mac, width='stretch')
+
+        # Maak de toegepaste achtergrondcorrectie controleerbaar op regelniveau.
+        controlekolommen = [
+            'Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'MAC_MKN'
+        ]
+        extra_kolommen = [
+            'Waarde_Origineel',
+            'Achtergrondconcentratie',
+            'Achtergrondcorrectie_Toegepast',
+        ]
+        for kolom in reversed(extra_kolommen):
+            if kolom in df_mac.columns:
+                controlekolommen.insert(3, kolom)
+
+        with st.expander("Toon individuele MAC-metingen en achtergrondcorrectie"):
+            st.dataframe(
+                df_mac[controlekolommen]
+                .sort_values(['Stof', 'Meetpunt', 'Datum'], ascending=[True, True, False]),
+                width='stretch',
+                column_config={
+                    'Waarde_Origineel': st.column_config.NumberColumn(
+                        'Oorspronkelijke concentratie', format='%.4g'
+                    ),
+                    'Achtergrondconcentratie': st.column_config.NumberColumn(
+                        'Achtergrondconcentratie', format='%.4g'
+                    ),
+                    'Waarde': st.column_config.NumberColumn(
+                        'Gecorrigeerde concentratie', format='%.4g'
+                    ),
+                    'Achtergrondcorrectie_Toegepast': st.column_config.CheckboxColumn(
+                        'Achtergrondcorrectie toegepast'
+                    ),
+                    'MAC_MKN': st.column_config.NumberColumn(
+                        'MAC-MKN', format='%.4g'
+                    ),
+                },
+            )
     else:
         if alleen_detecties:
             st.info("Geen waarden boven de rapportagegrens gevonden voor de MAC-MKN selectie.")

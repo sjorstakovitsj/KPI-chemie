@@ -91,7 +91,8 @@ if not df_risico.empty:
                 index='Meetpunt', 
                 columns='MaandNr', 
                 values='Percentage_van_drempelwaarde', 
-                fill_value=0 # Vul ontbrekende (geen overschrijding) vakjes met 0%
+                fill_value=0, # Vul ontbrekende (geen overschrijding) vakjes met 0%
+                observed=True
             )
             # Herschik de kolommen op volgorde van de maandnummers
             df_pivot = df_pivot.reindex(columns=MaandNr_Order, fill_value=0)
@@ -101,7 +102,8 @@ if not df_risico.empty:
                 index='Meetpunt', 
                 columns='MaandNr', 
                 values='Stof', 
-                aggfunc=lambda x: x.iloc[0] # Selecteer de stofnaam die bij de max hoort
+                aggfunc=lambda x: x.iloc[0], # Selecteer de stofnaam die bij de max hoort
+                observed=True
             )
             # Herschik en vul ontbrekende waarden met een duidelijke tekst
             df_pivot_stof = df_pivot_stof.reindex(columns=MaandNr_Order, fill_value="Geen overschrijding")
@@ -144,7 +146,7 @@ if not df_risico.empty:
                 coloraxis={'cmin': 100, 'cmax': max_val} if max_val > 100 else {}
             )
             
-            st.plotly_chart(fig_heat, use_container_width=True)
+            st.plotly_chart(fig_heat, width='stretch')
         else:
             st.info("Geen metingen beschikbaar in de geselecteerde filters met een geldige signaleringswaarde boven de drempelwaarde.")
     else:
@@ -194,7 +196,7 @@ if not df_risico.empty:
         # Toon de top 20
         st.dataframe(
             df_prioriteit.head(20),
-            use_container_width=True,
+            width='stretch',
             column_config={
                 "Stof": st.column_config.TextColumn("Stof", help="Naam van de stof"),
                 "Stofgroep": st.column_config.TextColumn("Stofgroep"),
@@ -252,7 +254,7 @@ if not df_risico.empty:
             df_filtered_spider['Analyse_Groep'] = df_filtered_spider['Meetpunt'].astype(str) + ' (' + df_filtered_spider['Jaar'].astype(str) + ')'
 
             # 3. Aggregeren: Tel overschrijdingen per Analyse_Groep en Maand
-            seasonal_counts = df_filtered_spider.groupby(['Analyse_Groep', 'MaandNr']).size().reset_index(name='Aantal')
+            seasonal_counts = df_filtered_spider.groupby(['Analyse_Groep', 'MaandNr'], observed=True).size().reset_index(name='Aantal')
             
             # 4. Zorg dat ALLE maanden (1-12) bestaan voor elke Analyse_Groep (via MultiIndex)
             unieke_groepen = seasonal_counts['Analyse_Groep'].unique()
@@ -278,7 +280,7 @@ if not df_risico.empty:
                 legend_title_text='Meetpunt (Jaar)'
             )
             
-            st.plotly_chart(fig_radar, use_container_width=True)
+            st.plotly_chart(fig_radar, width='stretch')
         else:
             st.warning("Selecteer één of meer meetpunten om de seizoensanalyse te zien.")
     else:
@@ -307,7 +309,7 @@ if not df_risico.empty:
             color_discrete_map={'Voldoet': 'lightgreen', 'Overschrijding': 'crimson'},
             hole=0.4
         )
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(fig_pie, width='stretch')
 
     with col_b:
         # GRAFIEK 3: Welke Stofgroepen veroorzaken de overschrijdingen?
@@ -315,7 +317,7 @@ if not df_risico.empty:
         df_alleen_overschrijdingen = df_risico[df_risico['Boven_Signalering']].copy()
         
         if not df_alleen_overschrijdingen.empty:
-            df_grp_count = df_alleen_overschrijdingen.groupby('Stofgroep').size().reset_index(name='Aantal overschrijdingen')
+            df_grp_count = df_alleen_overschrijdingen.groupby('Stofgroep', observed=True).size().reset_index(name='Aantal overschrijdingen')
             fig_grp = px.bar(
                 df_grp_count.sort_values('Aantal overschrijdingen', ascending=True),
                 x='Aantal overschrijdingen',
@@ -326,7 +328,7 @@ if not df_risico.empty:
                 color_continuous_scale='Reds'
             )
             fig_grp.update_layout(showlegend=False)
-            st.plotly_chart(fig_grp, use_container_width=True)
+            st.plotly_chart(fig_grp, width='stretch')
         else:
             st.info("Geen overschrijdingen om weer te geven per stofgroep.")
 
@@ -338,7 +340,7 @@ if not df_risico.empty:
 
     if not df_alleen_overschrijdingen.empty:
         # Groeperen op Maand en Stofgroep
-        df_timeline = df_alleen_overschrijdingen.groupby(['Maand', 'Stofgroep']).size().reset_index(name='Aantal')
+        df_timeline = df_alleen_overschrijdingen.groupby(['Maand', 'Stofgroep'], observed=True).size().reset_index(name='Aantal')
         
         fig_stack = px.bar(
             df_timeline.sort_values('Maand'), # Sorteer chronologisch
@@ -349,7 +351,7 @@ if not df_risico.empty:
             labels={'Maand': 'Maand (Jaar-Mnd)', 'Aantal': 'Aantal overschrijdingen'},
             barmode='stack'
         )
-        st.plotly_chart(fig_stack, use_container_width=True)
+        st.plotly_chart(fig_stack, width='stretch')
     else:
         st.info("Er zijn geen overschrijdingen in de geselecteerde periode.")
     
@@ -381,7 +383,7 @@ if not df_risico.empty:
                 labels={'Gemiddeld_Aantal': 'Gemiddeld aantal', 'Jaar': 'Jaar'}
             )
             fig_avg.update_xaxes(type='category', tickformat='d')
-            st.plotly_chart(fig_avg, use_container_width=True)
+            st.plotly_chart(fig_avg, width='stretch')
 
         with col_trend_2:
             st.markdown("**Per individueel meetpunt**")
@@ -391,7 +393,7 @@ if not df_risico.empty:
                 labels={'Aantal_Overschrijdingen': 'Aantal overschrijdingen', 'Jaar': 'Jaar'}
             )
             fig_indiv.update_xaxes(type='category', tickformat='d')
-            st.plotly_chart(fig_indiv, use_container_width=True)
+            st.plotly_chart(fig_indiv, width='stretch')
     else:
         st.info("Onvoldoende data om een trendgrafiek van overschrijdingen te maken.")
         
@@ -407,7 +409,7 @@ if not df_risico.empty:
     if not df_overtredingen.empty:
         st.dataframe(
             df_overtredingen[['Datum', 'Meetpunt', 'Stof', 'Waarde', 'Signaleringswaarde', 'Eenheid']],
-            use_container_width=True
+            width='stretch'
         )
     else:
         st.success("Er zijn stoffen zonder norm aangetroffen, maar geen enkele meting kwam boven de drempelwaarde van 0.1 ug/l uit.")

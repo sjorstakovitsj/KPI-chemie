@@ -40,8 +40,23 @@ if not df_pfas_ref.empty:
         df_pfas_calc['Bioacc_Waarde'] = df_pfas_calc['PEQ_Waarde'] * df_pfas_calc['RBF_calc']
 
         # --- DEEL A: Originele Grafieken (Per Meetpunt) ---
-        mp_opts = sorted(df_pfas_calc['Meetpunt'].unique())
-        sel_mp_pfas = st.selectbox("Selecteer meetpunt", mp_opts)
+        mp_opts = sorted(df_pfas_calc['Meetpunt'].dropna().unique())
+
+        # Selecteer Markermeer.midden standaard in alle grafieken op deze pagina.
+        # De vergelijking is hoofdletterongevoelig en negeert spaties rondom de naam.
+        gewenst_meetpunt = "markermeer.midden"
+        standaard_mp_index = next(
+            (
+                index for index, meetpunt in enumerate(mp_opts)
+                if str(meetpunt).strip().casefold() == gewenst_meetpunt.casefold()
+            ),
+            0,
+        )
+        sel_mp_pfas = st.selectbox(
+            "Selecteer meetpunt",
+            mp_opts,
+            index=standaard_mp_index,
+        )
 
         # Filter voor de staafgrafieken
         df_plot = df_pfas_calc[df_pfas_calc['Meetpunt'] == sel_mp_pfas].copy()
@@ -51,12 +66,12 @@ if not df_pfas_ref.empty:
         with col_bar1:
             fig_rpf = px.bar(df_plot.sort_values('Datum'), x='Datum', y='PEQ_Waarde', color='Stof', title='Relatieve toxiciteit (RPF-PEQ)')
             fig_rpf.add_hline(y=4.4, line_dash="dash", line_color="red", annotation_text="Norm: 4.4")
-            st.plotly_chart(fig_rpf, use_container_width=True)
+            st.plotly_chart(fig_rpf, width='stretch')
 
         with col_bar2:
             fig_rbf = px.bar(df_plot.sort_values('Datum'), x='Datum', y='Bioacc_Waarde', color='Stof', title='Bioaccumulatie')
             fig_rbf.add_hline(y=0.3, line_dash="dash", line_color="red", annotation_text="Drempel: 0.3")
-            st.plotly_chart(fig_rbf, use_container_width=True)
+            st.plotly_chart(fig_rbf, width='stretch')
 
         # --- DEEL B: NIEUWE SPIDER CHART (Seizoenspatroon) ---
         st.markdown("---")
@@ -132,7 +147,7 @@ if not df_pfas_ref.empty:
                         legend_title_text='Meetpunt (Jaar)'
                     )
 
-                    st.plotly_chart(fig_spider_pfas, use_container_width=True)
+                    st.plotly_chart(fig_spider_pfas, width='stretch')
                 else:
                     st.info("Geen data over om te plotten na aggregatie.")
             else:
