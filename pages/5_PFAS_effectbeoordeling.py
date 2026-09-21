@@ -2,15 +2,71 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from utils import load_data, get_shared_sidebar, load_pfas_ref
+from utils import (
+    PERIODES,
+    PERIODE_VOLGORDE,
+    get_filter_options,
+    query_data,
+    load_pfas_ref,
+)
 
 st.set_page_config(layout="wide", page_title="PFAS effectbeoordeling")
 
 st.header("PFAS effectbeoordeling")
 
-# Data en Sidebar
-df_main = load_data()
-df_filtered = get_shared_sidebar(df_main)
+# Lichte filteropties ophalen zonder de volledige dataset te laden.
+filter_options = get_filter_options()
+beschikbare_jaren = sorted(filter_options["jaren"], reverse=True)
+
+if not beschikbare_jaren:
+    st.error("🚨 Kritieke fout: geen beschikbare jaren gevonden in Parquet.")
+    st.stop()
+
+# Sidebar met behoud van dezelfde labels, defaults en session-state-key.
+st.sidebar.header("📅 Filter op jaren")
+geselecteerde_jaren = st.sidebar.multiselect(
+    "Selecteer gewenste jaren:",
+    options=beschikbare_jaren,
+    default=beschikbare_jaren,
+)
+
+# Gedeelde periodekeuze. De vaste key bewaart de selectie tussen pagina's die
+# dezelfde centrale PERIODES-definitie en session-state-key gebruiken.
+geselecteerde_periodes = st.sidebar.multiselect(
+    "Selecteer gewenste seizoenen of halfjaren:",
+    options=list(PERIODE_VOLGORDE),
+    default=list(PERIODE_VOLGORDE),
+    key="shared_periodes_filter",
+    help=(
+        "Winter: december t/m februari; voorjaar: maart t/m mei; "
+        "zomer: juni t/m augustus; herfst: september t/m november; "
+        "zomerhalfjaar: april t/m september; "
+        "winterhalfjaar: oktober t/m maart. "
+        "Bij meerdere keuzes worden de maanden gecombineerd."
+    ),
+)
+st.sidebar.markdown("---")
+st.sidebar.info("Navigeer via het menu hierboven naar de verschillende analyses.")
+
+# Predicate- en projection-pushdown. Alleen de kolommen die voor de PFAS-
+# effectbeoordeling nodig zijn worden uit Parquet gelezen. Een lege selectie
+# behoudt het eerdere gedrag en betekent geen jaarbeperking.
+PFAS_COLUMNS = (
+    "Datum",
+    "Meetpunt",
+    "Stof",
+    "Waarde",
+    "Limietsymbool",
+)
+df_filtered = query_data(
+    jaren=tuple(geselecteerde_jaren),
+    periodes=tuple(geselecteerde_periodes),
+    kolommen=PFAS_COLUMNS,
+)
+
+if df_filtered.empty:
+    st.error("🚨 Kritieke fout: de geselecteerde meetgegevens zijn leeg.")
+    st.stop()
 
 st.header("Effectbeoordeling PFAS")
 df_pfas_ref = load_pfas_ref()

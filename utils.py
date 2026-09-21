@@ -17,7 +17,7 @@ STOFGROEPEN_MAPPING = {
     'PFAS': [
         'perfluor', 'genx', 'adona', 'pfhpa', 'fluortelomeer', 'pfas', '9-chloorhexadecaanfluor-3-oxanon-1-sulfonzuur',
         'trifluor', 'tridecafluor', '10:2', '8:2', '6:2', '4:2', '11-chlooreicosafluor-3-oxaundecaan-1-sulfonzuur',
-        'som hexadecafluor-2-deceenzuur-isomerenâ', "2,3,3,3-tetrafluorpropaanzuur"
+        'som hexadecafluor-2-deceenzuur-isomerenâ', "2,3,3,3-tetrafluorpropaanzuur", "ammonium 2,3,3,3-tetrafluor-2-(heptafluorpropoxy)-propanoaat"
     ],
     'PAKs/PCBs/PBDEs': [
         'naftaleen', 'antraceen', 'fenantreen', 'fluorantheen', 'benzo(a)', 'benzo(g', 'benzo(k',
@@ -39,7 +39,7 @@ STOFGROEPEN_MAPPING = {
         'triazofos', 'fenoxyazijnzuur', 'fenoxyboterzuur', 'fenoxypropionzuur', 'ddt', 'ddd', 'dde',
         'dinitro-o-cresol', 'aminomethyl', 'amisulpride', 'deltamethrin', 'diflufenican',
         'esfenvaleraat', 'parathion', 'fenitrothion', 'fenthion', 'fipronil', 'fluconazol',
-        'glufosinaat', 'cyhalothrin', 'trifluraline', 'triazool', '3-(hydroxymethylfosfinoyl)propionzuur',
+        'glufosinaat', 'cyhalothrin', 'trifluraline', '3-(hydroxymethylfosfinoyl)propionzuur',
         'dinoterb', 'heptenofos', 'metabenzthiazuron', "4,4'-dichloordifenyltrichloorethaan",
         "2,4'-dichloordifenyltrichloorethaan", 'penconazool', 'acetamiprid', 'thiamethoxam', 'methiocarb',
          'cyprodinil', 'bromacil', 'diethyltoluamide', 'chloorprofam', 'propyzamide', 'propamocarb', 'propoxur',
@@ -47,7 +47,7 @@ STOFGROEPEN_MAPPING = {
          'aldicarb', 'triallaat', 'triclosan', 'imazalil', 'ipconazole', 'prochloraz', 'tebuconazol', 
          'tetraconazool', 'metaflumizon', 'dimoxystrobine', 'metconazool', 'clothianidine',
          'cyazofamide', 'bromuconazool', 'difenoconazool', 'amisulbrom', 'etoxazool', 'ketoconazol',
-         'epoxiconazool', 'mefentrifluconazool', 'triticonazool', 'dichlobenil'
+         'epoxiconazool', 'mefentrifluconazool', 'triticonazool', 'dichlobenil', '1,2,4-triazool'
     ],
     'Geneesmiddelen': [
         'diclofenac', 'carbamazepine', 'metformine', 'tramadol', 'paracetamol', 'gadobutrol',
@@ -65,7 +65,7 @@ STOFGROEPEN_MAPPING = {
         'gabapentine', 'gadoversetamide', 'gadodiamide', 'citalopram', 'valium', 'candesartan',
         'bisoprolol', 'gadoteerzuur', 'gadoxeetzuur', 'gadobeenzuur', 'famoxadone', 'acetylcedreen',
         'sandacanol', 'oxytetracycline', 'clotrimazol', '17beta-estradiol', 'oestron', 'ethinylestradiol',
-        'amiodaron', 'climbazole', 'norfloxacine', 'tetracycline', 'tylosine'
+        'amiodaron', 'climbazole', 'norfloxacine', 'tetracycline', 'tylosine', 'gadopentetinezuur'
     ],
 
     'Vluchtige organische stoffen': [
@@ -83,14 +83,15 @@ STOFGROEPEN_MAPPING = {
         '4-tertiair-octylfenol', 'som 4-nonylfenol-isomeren (vertakt)', 'melamine', 'trifenylfosfaat',
         'trifenylfosfineoxide', '5-acetyl-1,1,2,3,3,6-hexamethylindaan', 'verdyl acetaat', 'tonalide',
         'traseolide', 'verdox', 'celestolide', 'galaxolide', 'antrachinon', 'cashmeran', 'isoforon',
-        '1,4-dioxaan', 'chloorxylenol', 'amberonne', 'hexahydrohexamethylcyclopentabenzopyran (hhcb)'
+        '1,4-dioxaan', 'chloorxylenol', 'amberonne', 'hexahydrohexamethylcyclopentabenzopyran (hhcb)',
+        'triethylfosfaat', 'tris(2-butoxyethyl)fosfaat', '1,2,3-benzotriazool', 'som 4- en 5-methyl-1h-benzotriazool'
     ],
     'Nutriënten & algemeen': [
         'fluoride', 'zuurstof', 'chlorofyl', 'silicium', 'sulfaat', 'koolstof', 'stikstof',
-        'nitraat', 'nitriet', 'ammonium', 'fosfor', 'fosfaat', 'chloride', 'zwevende stof',
+        'nitraat', 'nitriet', 'ammonium', "fosfor", "fosfaat", 'chloride', 'zwevende stof',
         'hardheid', 'temperatuur', 'zuurgraad', 'geleidbaarheid', 'gloeirest', 'onopgeloste',
         'doorzicht', 'saliniteit', 'troebelheid', 'cyanide', 'bicarbonaat', 'waterstofcarbonaat',
-        'extinctie', 'kleur', 'geur', 'olie', 'schuim', 'vuil', 'escherichia coli'
+        'extinctie', 'kleur', 'geur', 'olie', 'schuim', 'vuil', 'escherichia coli', 'intestinale enterococcen'
     ],
     'Metalen & elementen': [
         'aluminium', 'antimoon', 'arseen', 'barium', 'beryllium', 'boor', 'cadmium', 'calcium',
@@ -348,335 +349,407 @@ def match_stofgroep_optimized(unieke_stoffen):
             mapping[stof] = 'Onbekend'
     return mapping
 
-@st.cache_data
-def load_data():
+PARQUET_FILE_PATH = 'data/metingen.parquet'
+METADATA_FILE_PATH = 'data/metadata.json'
+
+# Centrale periode-indeling voor alle dashboardpagina's.
+# Bij gecombineerde selecties wordt de unie van de bijbehorende maanden gebruikt.
+PERIODES = {
+    "Winter": (12, 1, 2),
+    "Voorjaar": (3, 4, 5),
+    "Zomer": (6, 7, 8),
+    "Herfst": (9, 10, 11),
+    "Zomerhalfjaar": (4, 5, 6, 7, 8, 9),
+    "Winterhalfjaar": (10, 11, 12, 1, 2, 3),
+}
+PERIODE_VOLGORDE = tuple(PERIODES)
+
+
+def _data_artifact_version() -> tuple[int, int]:
+    """Geeft een stabiele cacheversie op basis van mtime en bestandsgrootte."""
+    from pathlib import Path
+
+    pad = Path(PARQUET_FILE_PATH)
+    if not pad.is_file():
+        return (0, 0)
+    stat = pad.stat()
+    return (stat.st_mtime_ns, stat.st_size)
+
+
+def _normaliseer_queryselectie(waarden) -> tuple:
+    """Maakt widgetselecties stabiel en hashbaar voor de Streamlit-cache."""
+    if waarden is None:
+        return ()
+    if isinstance(waarden, (str, bytes)):
+        waarden = (waarden,)
+    return tuple(sorted(set(waarden), key=lambda waarde: str(waarde)))
+
+
+def _quote_identifier(kolomnaam: str) -> str:
+    """Quote een reeds gevalideerde DuckDB-identifier veilig."""
+    return '"' + kolomnaam.replace('"', '""') + '"'
+
+
+@st.cache_data(show_spinner=False, max_entries=8)
+def _get_parquet_columns_cached(
+    artifact_version: tuple[int, int],
+) -> tuple[str, ...]:
+    """Leest alleen het Parquet-schema; artifact_version invalideert de cache."""
+    from pathlib import Path
+
     try:
-        df = pd.read_csv(DATA_FILE_PATH, delimiter=';', low_memory=False, encoding='latin-1')
-    except FileNotFoundError:
-        st.error(f"Bestand niet gevonden op pad: {DATA_FILE_PATH}.")
+        import duckdb
+    except ImportError as exc:
+        raise RuntimeError(
+            "DuckDB is niet geinstalleerd. Voeg `duckdb` toe aan requirements.txt."
+        ) from exc
+
+    pad = Path(PARQUET_FILE_PATH).resolve()
+    if not pad.is_file():
+        raise FileNotFoundError(
+            f"Parquetbestand niet gevonden op pad: {PARQUET_FILE_PATH}."
+        )
+
+    try:
+        with duckdb.connect(database=":memory:") as con:
+            beschrijving = con.execute(
+                "DESCRIBE SELECT * FROM read_parquet(?)",
+                [pad.as_posix()],
+            ).fetchall()
+    except duckdb.Error as exc:
+        raise RuntimeError(
+            f"Parquetschema kan niet via DuckDB worden gelezen: {exc}"
+        ) from exc
+
+    return tuple(rij[0] for rij in beschrijving)
+
+
+
+@st.cache_data(show_spinner=False, max_entries=8)
+def _get_filter_options_cached(
+    artifact_version: tuple[int, int],
+) -> dict[str, tuple]:
+    """Haalt unieke filterwaarden read-only op uit Parquet via DuckDB.
+
+    artifact_version is bewust onderdeel van de functieparameters, zodat een
+    nieuw Parquet-artifact automatisch een nieuwe Streamlit-cache-entry krijgt.
+    """
+    from pathlib import Path
+
+    try:
+        import duckdb
+    except ImportError as exc:
+        raise RuntimeError(
+            "DuckDB is niet geinstalleerd. Voeg `duckdb` toe aan "
+            "requirements.txt."
+        ) from exc
+
+    pad = Path(PARQUET_FILE_PATH).resolve()
+    if not pad.is_file():
+        raise FileNotFoundError(
+            f"Parquetbestand niet gevonden op pad: {PARQUET_FILE_PATH}."
+        )
+
+    sql = """
+        SELECT
+            list_sort(list(DISTINCT year("Datum"))) AS jaren,
+            list_sort(list(DISTINCT "Meetpunt")) AS meetpunten,
+            list_sort(list(DISTINCT "Stof")) AS stoffen,
+            list_sort(list(DISTINCT "Stofgroep")) AS stofgroepen,
+            list_sort(list(DISTINCT "Eenheid")) AS eenheden
+        FROM read_parquet(?)
+    """
+
+    try:
+        with duckdb.connect(database=":memory:") as con:
+            rij = con.execute(sql, [pad.as_posix()]).fetchone()
+    except duckdb.Error as exc:
+        raise RuntimeError(
+            f"Filteropties kunnen niet via DuckDB worden opgehaald: {exc}"
+        ) from exc
+
+    if rij is None:
+        return _lege_filteropties()
+
+    return {
+        "jaren": tuple(
+            int(jaar) for jaar in (rij[0] or []) if jaar is not None
+        ),
+        "meetpunten": tuple(
+            waarde for waarde in (rij[1] or []) if waarde is not None
+        ),
+        "stoffen": tuple(
+            waarde for waarde in (rij[2] or []) if waarde is not None
+        ),
+        "stofgroepen": tuple(
+            waarde for waarde in (rij[3] or []) if waarde is not None
+        ),
+        "eenheden": tuple(
+            waarde for waarde in (rij[4] or []) if waarde is not None
+        ),
+    }
+
+
+def _lege_filteropties() -> dict[str, tuple]:
+    """Levert een nieuwe, lege optiestructuur voor foutafhandeling."""
+    return {
+        "jaren": (),
+        "meetpunten": (),
+        "stoffen": (),
+        "stofgroepen": (),
+        "eenheden": (),
+    }
+
+
+def get_filter_options() -> dict[str, tuple]:
+    """Publieke, gecachete filteroptielaag voor Streamlit-pagina's."""
+    artifact_version = _data_artifact_version()
+
+    if artifact_version == (0, 0):
+        st.error(
+            f"Parquetbestand niet gevonden op pad: {PARQUET_FILE_PATH}. "
+            "Voer eerst `python build_data.py` uit."
+        )
+        return _lege_filteropties()
+
+    try:
+        return _get_filter_options_cached(
+            artifact_version=artifact_version,
+        )
+    except (FileNotFoundError, RuntimeError) as exc:
+        st.error(str(exc))
+        return _lege_filteropties()
+
+
+@st.cache_data(
+    show_spinner="Meetgegevens selecteren...",
+    max_entries=128,
+)
+def _query_data_cached(
+    artifact_version: tuple[int, int],
+    jaren: tuple[int, ...],
+    periodes: tuple[str, ...],
+    stoffen: tuple[str, ...],
+    meetpunten: tuple[str, ...],
+    stofgroepen: tuple[str, ...],
+    eenheden: tuple[str, ...],
+    kolommen: tuple[str, ...],
+    datum_vanaf: str | None,
+    datum_tot: str | None,
+) -> pd.DataFrame:
+    """Voert een read-only DuckDB-query met pushdown uit."""
+    from datetime import datetime
+    from pathlib import Path
+
+    try:
+        import duckdb
+    except ImportError:
+        st.error(
+            "DuckDB is niet geinstalleerd. Voeg `duckdb` toe aan "
+            "requirements.txt en installeer de requirements opnieuw."
+        )
         return pd.DataFrame()
-    
-    # Normaliseer en koppel ALLE benodigde bronkolommen aan vaste interne namen.
-    # De vergelijking is ongevoelig voor hoofdletters, BOM-tekens, spaties,
-    # koppeltekens, punten en underscores. De originele gegevenswaarden blijven behouden.
-    def _normaliseer_kolomnaam(naam):
-        return (
-            str(naam)
-            .replace('\ufeff', '')
-            .strip()
-            .casefold()
-            .replace('ë', 'e')
-            .replace('é', 'e')
-            .replace('ï', 'i')
-            .replace('ö', 'o')
-            .replace('ü', 'u')
+
+    pad = Path(PARQUET_FILE_PATH).resolve()
+    if not pad.is_file():
+        st.error(
+            f"Parquetbestand niet gevonden op pad: {PARQUET_FILE_PATH}. "
+            "Voer eerst `python build_data.py` uit."
         )
-
-    def _kolomsleutel(naam):
-        # Maak equivalente schrijfwijzen gelijk, bijvoorbeeld:
-        # 'Event Waarde', 'event-waarde' en 'event_waarde'.
-        return ''.join(
-            teken for teken in _normaliseer_kolomnaam(naam)
-            if teken.isalnum()
-        )
-
-    column_aliases = {
-        'Datum': [
-            'datum', 'eventdatum', 'event_datum', 'meetdatum', 'monsterdatum'
-        ],
-        'Meetpunt': [
-            'meetpunt', 'locatie_code', 'locatiecode', 'meetpunt_code',
-            'meetpuntcode', 'locatie'
-        ],
-        'Stof': [
-            'stof', 'parameter_omschrijving', 'parameteromschrijving',
-            'parameter', 'stofnaam'
-        ],
-        'Waarde': [
-            'waarde', 'event_waarde', 'eventwaarde', 'meetwaarde',
-            'resultaat', 'numerieke_waarde'
-        ],
-        'Eenheid': [
-            'eenheid', 'eenheid_code', 'eenheidcode', 'unit'
-        ],
-        'Limietsymbool': [
-            'limietsymbool', 'limiet_symbool', 'event_waarde_limietsymbool',
-            'eventwaardelimietsymbool', 'event_waarde_limiet_symbool',
-            'grenssymbool', 'detectielimietsymbool'
-        ],
-        'hoedanigheid': [
-            'hoedanigheid', 'hoedanigheid_code', 'hoedanigheidcode'
-        ],
-        'Latitude': [
-            'latitude', 'lat', 'locatie_lat_etrs89', 'locatielatetrs89',
-            'breedtegraad'
-        ],
-        'Longitude': [
-            'longitude', 'lon', 'lng', 'locatie_lon_etrs89',
-            'locatielonetrs89', 'lengtegraad'
-        ],
-        'Hoedanigheid_Omschr': [
-            'hoedanigheid_omschr', 'hoedanigheid_omschrijving',
-            'hoedanigheidomschrijving'
-        ],
-        'Eenheid_Omschr': [
-            'eenheid_omschr', 'eenheid_omschrijving', 'eenheidomschrijving'
-        ],
-    }
-
-    # Bouw één lookup op voor alle toegestane schrijfwijzen.
-    alias_lookup = {}
-    for target, aliases in column_aliases.items():
-        for naam in [target, *aliases]:
-            sleutel = _kolomsleutel(naam)
-            bestaand_target = alias_lookup.get(sleutel)
-            if bestaand_target is not None and bestaand_target != target:
-                raise ValueError(
-                    f"Dubbelzinnige kolomalias '{naam}' voor "
-                    f"'{bestaand_target}' en '{target}'."
-                )
-            alias_lookup[sleutel] = target
-
-    # Verzamel alle gevonden varianten per interne doelkolom.
-    gevonden_kolommen = {target: [] for target in column_aliases}
-    for kolom in df.columns:
-        target = alias_lookup.get(_kolomsleutel(kolom))
-        if target is not None:
-            gevonden_kolommen[target].append(kolom)
-
-    # Combineer dubbele/alternatieve kolommen zonder niet-lege waarden te verliezen.
-    # De interne doelnaam krijgt voorrang als die al aanwezig is.
-    for target, bronkolommen in gevonden_kolommen.items():
-        if not bronkolommen:
-            continue
-
-        bronkolommen.sort(
-            key=lambda kolom: _kolomsleutel(kolom) != _kolomsleutel(target)
-        )
-        gecombineerd = df[bronkolommen[0]].copy()
-        for kolom in bronkolommen[1:]:
-            gecombineerd = gecombineerd.combine_first(df[kolom])
-
-        df[target] = gecombineerd
-        verwijderen = [kolom for kolom in bronkolommen if kolom != target]
-        if verwijderen:
-            df = df.drop(columns=verwijderen)
-
-    # Stop met een duidelijke diagnose als een verplichte bronkolom echt ontbreekt.
-    verplichte_kolommen = [
-        'Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'Limietsymbool',
-        'hoedanigheid', 'Latitude', 'Longitude',
-        'Hoedanigheid_Omschr', 'Eenheid_Omschr'
-    ]
-    ontbrekende_kolommen = [
-        kolom for kolom in verplichte_kolommen if kolom not in df.columns
-    ]
-    if ontbrekende_kolommen:
-        raise ValueError(
-            "De dataset mist verplichte kolommen na normalisatie: "
-            f"{ontbrekende_kolommen}. Aangetroffen bronkolommen: "
-            f"{list(df.columns)}"
-        )
-
-    df['hoedanigheid'] = df['hoedanigheid'].astype(str).str.strip().str.lower()
-    df['Stof'] = df['Stof'].astype(str).str.strip()
-    df['Limietsymbool'] = (
-        df['Limietsymbool']
-        .fillna('')
-        .astype(str)
-        .str.strip()
-        .replace({'nan': '', 'None': '', '<NA>': ''})
-    )
-    
-    df['Hoedanigheid_Omschr_lower'] = df['Hoedanigheid_Omschr'].astype(str).str.strip().str.lower()
-    df['Eenheid_Omschr_lower'] = df['Eenheid_Omschr'].astype(str).str.strip().str.lower()
-    
-    mask_nvt = df['Stof'] == 'NVT'
-    
-    mask_gadolinium_antropogeen = (
-        (df['Stof'].str.lower() == 'gadolinium') & 
-        (df['Eenheid_Omschr_lower'] == 'dimensieloos')
-    )
-    
-    conditions = [
-        mask_nvt & (df['Hoedanigheid_Omschr_lower'].str.contains('calciumcarbonaat', na=False)), 
-        mask_nvt & (df['Hoedanigheid_Omschr_lower'].str.contains('t.o.v. 20 graden celsius', na=False)), 
-        mask_nvt & (df['Eenheid_Omschr_lower'] == 'decimeter'), 
-        mask_nvt & (df['Eenheid_Omschr_lower'] == 'dimensieloos') & (df['Waarde'] < 3),
-        mask_nvt & (df['Eenheid_Omschr_lower'] == 'dimensieloos') & (df['Waarde'] > 3),
-        mask_nvt & (df['Eenheid_Omschr_lower'].str.contains('formazine nephelometric unit', na=False)), 
-        mask_nvt & (df['Eenheid_Omschr_lower'] == 'graad celsius'),
-        mask_nvt & (df['Eenheid_Omschr_lower'] == 'per meter'),
-        mask_gadolinium_antropogeen
-    ]
-    
-    new_values = [
-        'hardheid',
-        'geleidbaarheid',
-        'doorzicht',
-        'saliniteit',
-        'zuurgraad',
-        'troebelheid',
-        'temperatuur',
-        'extinctie',
-        'gadolinium (antropogeen)'
-    ]
-    
-    df['Stof'] = np.select(conditions, new_values, default=df['Stof'])
-    
-    df = df.drop(columns=[
-        'Hoedanigheid_Omschr', 
-        'Eenheid_Omschr', 
-        'Hoedanigheid_Omschr_lower', 
-        'Eenheid_Omschr_lower'
-    ])
-
-    cond_opgelost = df['hoedanigheid'].str.contains('nf|filtratie|opgeloste', na=False)
-    suffix = " (totaal)"
-    df['suffix'] = np.where(cond_opgelost, " (opgelost)", suffix)
-    df['Stof'] = df['Stof'] + df['suffix']
-    df = df.drop(columns=['suffix'])
-    
-    df['Stof'] = df['Stof'].str.lower()
-    df['Datum'] = pd.to_datetime(df['Datum'], format='%Y-%m-%d', errors='coerce')
-    # Ondersteun numerieke waarden met zowel een decimale punt als decimale komma.
-    for numerieke_kolom in ['Waarde', 'Latitude', 'Longitude']:
-        df[numerieke_kolom] = (
-            df[numerieke_kolom]
-            .astype('string')
-            .str.strip()
-            .str.replace(' ', '', regex=False)
-            .str.replace(',', '.', regex=False)
-        )
-        df[numerieke_kolom] = pd.to_numeric(
-            df[numerieke_kolom], errors='coerce'
-        )
-
-    df = df[df['Waarde'] != 999999999999]
-    df = df.dropna(subset=['Waarde', 'Datum', 'Meetpunt', 'Stof']).copy()
-
-    for col in ['Meetpunt', 'Eenheid']:
-        df[col] = df[col].astype('category')
+        return pd.DataFrame()
 
     try:
-        df_normen = pd.read_csv(NORMEN_FILE_PATH, delimiter=',', low_memory=False, encoding='latin-1')
-        df_normen = df_normen.rename(columns={
-            'Stofnaam': 'Stof',
-            'Norm': 'NormType',
-            'Waarde': 'NormWaarde'
-        })
+        beschikbare_kolommen = _get_parquet_columns_cached(artifact_version)
+    except (FileNotFoundError, RuntimeError) as exc:
+        st.error(str(exc))
+        return pd.DataFrame()
 
-        df_normen['Stof'] = df_normen['Stof'].astype(str).str.strip()
-        
-        norm_type_str = df_normen['NormType'].astype(str).str.lower()
-        cond_norm_opgelost = norm_type_str.str.contains('opgelost')
-        cond_norm_totaal = norm_type_str.str.contains('totaal')
-        
-        df_normen['suffix'] = ''
-        df_normen.loc[cond_norm_opgelost, 'suffix'] = ' (opgelost)'
-        df_normen.loc[cond_norm_totaal, 'suffix'] = ' (totaal)'
-        
-        df_normen['Stof'] = (df_normen['Stof'] + df_normen['suffix']).str.lower()
-
-        cond_jg = norm_type_str.str.contains('jg-mkn|jaargemiddelde')
-        cond_mac = norm_type_str.str.contains('mac-mkn|maximaal')
-        
-        df_normen['NormCode'] = None
-        df_normen.loc[cond_jg, 'NormCode'] = 'JG_MKN'
-        df_normen.loc[cond_mac, 'NormCode'] = 'MAC_MKN'
-
-        df_normen_filtered = df_normen.dropna(subset=['NormCode']).copy()
-
-        df_normen_filtered['NormWaarde'] = (
-            df_normen_filtered['NormWaarde']
-            .astype(str)
-            .str.replace(',', '.', regex=False)
-        )
-        df_normen_filtered['NormWaarde'] = pd.to_numeric(df_normen_filtered['NormWaarde'], errors='coerce')
-
-        df_normen_pivot = df_normen_filtered.pivot_table(
-            index='Stof',
-            columns='NormCode',
-            values='NormWaarde',
-            aggfunc='first'
-        ).reset_index()
-
-        df = pd.merge(
-            df,
-            df_normen_pivot,
-            on='Stof',
-            how='left'
+    beschikbare_set = set(beschikbare_kolommen)
+    geselecteerde_kolommen = kolommen or beschikbare_kolommen
+    onbekende_kolommen = sorted(set(geselecteerde_kolommen) - beschikbare_set)
+    if onbekende_kolommen:
+        raise ValueError(
+            "Onbekende of niet-toegestane Parquetkolommen: "
+            + ", ".join(onbekende_kolommen)
         )
 
-    except FileNotFoundError:
-        st.error(f"Koppeltabel KRW-normen niet gevonden op pad: {NORMEN_FILE_PATH}.")
-        df['JG_MKN'] = np.nan
-        df['MAC_MKN'] = np.nan
-
-    if 'JG_MKN' not in df.columns: df['JG_MKN'] = np.nan
-    
-    df['KRW_Norm'] = df['JG_MKN']
-
-    # Pas de achtergrondcorrectie centraal toe. Alle vervolgfuncties en pagina's
-    # gebruiken daarna de gecorrigeerde kolom 'Waarde'; de bronwaarde blijft
-    # beschikbaar in 'Waarde_Origineel'.
-    df = apply_achtergrondcorrectie(df)
-
-    df['Signaleringswaarde'] = np.nan
-
-    # Koppel op de basisstofnaam, zodat '(totaal)' en '(opgelost)'
-    # automatisch dezelfde stofspecifieke signaleringswaarde krijgen.
-    base_stofnaam = (
-        df['Stof']
-        .astype(str)
-        .str.replace(r' \(totaal\)| \(opgelost\)', '', regex=True)
-        .str.strip()
-        .str.casefold()
+    select_sql = ", ".join(
+        _quote_identifier(kolom) for kolom in geselecteerde_kolommen
     )
-    eenheid_is_ug_l = (
-        df['Eenheid'].astype(str).str.strip().str.casefold().eq('ug/l')
+    voorwaarden: list[str] = []
+    parameters: list[object] = [pad.as_posix()]
+
+    def voeg_in_filter_toe(kolom: str, waarden: tuple) -> None:
+        if not waarden:
+            return
+        if kolom not in beschikbare_set:
+            raise ValueError(
+                f"Filterkolom '{kolom}' ontbreekt in het Parquetbestand."
+            )
+        placeholders = ", ".join("?" for _ in waarden)
+        voorwaarden.append(
+            f"{_quote_identifier(kolom)} IN ({placeholders})"
+        )
+        parameters.extend(waarden)
+
+    if jaren:
+        if "Datum" not in beschikbare_set:
+            raise ValueError("Filterkolom 'Datum' ontbreekt in het Parquetbestand.")
+        placeholders = ", ".join("?" for _ in jaren)
+        voorwaarden.append(
+            f"year({_quote_identifier('Datum')}) IN ({placeholders})"
+        )
+        parameters.extend(jaren)
+
+    if periodes:
+        if "Datum" not in beschikbare_set:
+            raise ValueError("Filterkolom 'Datum' ontbreekt in het Parquetbestand.")
+
+        onbekende_periodes = sorted(set(periodes) - set(PERIODES))
+        if onbekende_periodes:
+            raise ValueError(
+                "Onbekende perioden: " + ", ".join(onbekende_periodes)
+            )
+
+        maanden = tuple(sorted({
+            maand
+            for periode in periodes
+            for maand in PERIODES[periode]
+        }))
+        placeholders = ", ".join("?" for _ in maanden)
+        voorwaarden.append(
+            f"month({_quote_identifier('Datum')}) IN ({placeholders})"
+        )
+        parameters.extend(maanden)
+
+    voeg_in_filter_toe("Stof", stoffen)
+    voeg_in_filter_toe("Meetpunt", meetpunten)
+    voeg_in_filter_toe("Stofgroep", stofgroepen)
+    voeg_in_filter_toe("Eenheid", eenheden)
+
+    if datum_vanaf is not None:
+        voorwaarden.append(f"{_quote_identifier('Datum')} >= CAST(? AS DATE)")
+        parameters.append(datum_vanaf)
+    if datum_tot is not None:
+        voorwaarden.append(f"{_quote_identifier('Datum')} <= CAST(? AS DATE)")
+        parameters.append(datum_tot)
+
+    where_sql = ""
+    if voorwaarden:
+        where_sql = " WHERE " + " AND ".join(voorwaarden)
+
+    sql = f"SELECT {select_sql} FROM read_parquet(?){where_sql}"
+
+    try:
+        # Private in-memory connectie per cache-miss: geen gedeelde state en
+        # geen persistent DuckDB-bestand. read_parquet wordt uitsluitend gelezen.
+        with duckdb.connect(database=":memory:") as con:
+            df = con.execute(sql, parameters).fetchdf()
+    except duckdb.Error as exc:
+        st.error(f"DuckDB-query op Parquet is mislukt: {exc}")
+        return pd.DataFrame(columns=list(geselecteerde_kolommen))
+
+    if "Datum" in df.columns:
+        df["Datum"] = pd.to_datetime(df["Datum"], errors="coerce")
+    for kolom in ("Meetpunt", "Eenheid", "Stofgroep"):
+        if kolom in df.columns and not isinstance(
+            df[kolom].dtype, pd.CategoricalDtype
+        ):
+            df[kolom] = df[kolom].astype("category")
+
+    return df
+
+
+def query_data(
+    *,
+    jaren=(),
+    periodes=(),
+    stoffen=(),
+    meetpunten=(),
+    stofgroepen=(),
+    eenheden=(),
+    kolommen=(),
+    datum_vanaf=None,
+    datum_tot=None,
+) -> pd.DataFrame:
+    """Publieke querylaag met veilige pushdown en genormaliseerde cachesleutels.
+
+    Lege filters betekenen 'geen beperking'. Kolommen=() retourneert alle
+    kolommen en houdt daarmee de bestaande load_data-interface intact.
+    """
+    artifact_version = _data_artifact_version()
+    if artifact_version == (0, 0):
+        st.error(
+            f"Parquetbestand niet gevonden op pad: {PARQUET_FILE_PATH}. "
+            "Voer eerst `python build_data.py` uit."
+        )
+        return pd.DataFrame()
+
+    genormaliseerde_kolommen = tuple(kolommen) if kolommen else ()
+    vanaf = None if datum_vanaf is None else str(pd.Timestamp(datum_vanaf).date())
+    tot = None if datum_tot is None else str(pd.Timestamp(datum_tot).date())
+
+    return _query_data_cached(
+        artifact_version=artifact_version,
+        jaren=tuple(int(jaar) for jaar in _normaliseer_queryselectie(jaren)),
+        periodes=_normaliseer_queryselectie(periodes),
+        stoffen=_normaliseer_queryselectie(stoffen),
+        meetpunten=_normaliseer_queryselectie(meetpunten),
+        stofgroepen=_normaliseer_queryselectie(stofgroepen),
+        eenheden=_normaliseer_queryselectie(eenheden),
+        kolommen=genormaliseerde_kolommen,
+        datum_vanaf=vanaf,
+        datum_tot=tot,
     )
-    heeft_geen_jg_mkn = df['JG_MKN'].isna()
-    uitgesloten_elementen = {
-        str(stof).strip().casefold()
-        for stof in UITGESLOTEN_ELEMENTEN
-    }
 
-    df_signalering = load_signaleringswaarden()
-    signaleringswaarde_map = df_signalering.set_index(
-        'stofnaam'
-    )['signaleringswaarde']
-    gekoppelde_signaleringswaarde = base_stofnaam.map(
-        signaleringswaarde_map
+
+# Achterwaartse compatibiliteit voor eventuele rechtstreekse interne aanroepen.
+def _load_parquet_cached(artifact_version: tuple[int, int]) -> pd.DataFrame:
+    return _query_data_cached(
+        artifact_version=artifact_version,
+        jaren=(),
+        periodes=(),
+        stoffen=(),
+        meetpunten=(),
+        stofgroepen=(),
+        eenheden=(),
+        kolommen=(),
+        datum_vanaf=None,
+        datum_tot=None,
     )
+def _set_last_update_from_metadata() -> None:
+    """Behoudt last_update, maar gebruikt voortaan het echte buildmoment."""
+    import json
+    from pathlib import Path
 
-    # Een match uit de koppeltabel heeft voorrang, met behoud van de bestaande
-    # voorwaarden: alleen ug/l en alleen wanneer geen JG-MKN beschikbaar is.
-    masker_gekoppeld = (
-        heeft_geen_jg_mkn
-        & eenheid_is_ug_l
-        & gekoppelde_signaleringswaarde.notna()
-    )
-    df.loc[masker_gekoppeld, 'Signaleringswaarde'] = (
-        gekoppelde_signaleringswaarde.loc[masker_gekoppeld]
-    )
+    metadata_pad = Path(METADATA_FILE_PATH)
+    waarde = datetime.fromtimestamp(
+        Path(PARQUET_FILE_PATH).stat().st_mtime
+    ).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Bij geen match blijft de generieke 0,1 ug/l gelden, behalve voor de
-    # stoffen die expliciet in UITGESLOTEN_ELEMENTEN staan.
-    masker_generiek = (
-        heeft_geen_jg_mkn
-        & eenheid_is_ug_l
-        & gekoppelde_signaleringswaarde.isna()
-        & ~base_stofnaam.isin(uitgesloten_elementen)
-    )
-    df.loc[masker_generiek, 'Signaleringswaarde'] = 0.1
+    if metadata_pad.is_file():
+        try:
+            metadata = json.loads(metadata_pad.read_text(encoding="utf-8"))
+            waarde = metadata.get("built_at_local", waarde)
+        except (OSError, ValueError, TypeError):
+            pass
 
-    st.session_state.last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    st.session_state.last_update = waarde
 
-    unieke_stoffen = df['Stof'].unique()
-    stof_map = match_stofgroep_optimized(unieke_stoffen)
-    df['Stofgroep'] = df['Stof'].map(stof_map).astype('category')
 
+def load_data() -> pd.DataFrame:
+    """Publieke compatibiliteitslaag: leest de vooraf gebouwde Parquet-dataset."""
+    versie = _data_artifact_version()
+    if versie == (0, 0):
+        st.error(
+            f"Parquetbestand niet gevonden op pad: {PARQUET_FILE_PATH}. "
+            "Voer eerst `python build_data.py` uit."
+        )
+        return pd.DataFrame()
+
+    df = query_data()
+    if not df.empty:
+        _set_last_update_from_metadata()
     return df
 
  
@@ -718,25 +791,107 @@ def create_gauge(percentage: float, title_text: str = "Metingen onder Norm", dre
     fig.update_layout(height=250, margin=dict(l=30, r=30, t=50, b=10))
     return fig
 
-def get_shared_sidebar(df_main):
-    st.sidebar.header("📅 Filter op jaren")
-    
-    if not df_main.empty and 'Datum' in df_main.columns:
-        beschikbare_jaren = sorted(df_main['Datum'].dt.year.dropna().unique(), reverse=True)
-    else:
-        beschikbare_jaren = []
-    
+def get_shared_sidebar_filters(
+    *,
+    toon_aggregatiemethode: bool = True,
+) -> tuple[tuple[int, ...], tuple[str, ...]]:
+    """Toont gedeelde jaar- en periodefilters voor DuckDB-querypagina's.
+
+    Lege selecties betekenen, net als bij query_data, geen beperking. De vaste
+    widgetkeys zorgen dat de selectie tussen Streamlit-pagina's behouden blijft.
+    """
+    filter_options = get_filter_options()
+    beschikbare_jaren = sorted(filter_options["jaren"], reverse=True)
+
+    st.sidebar.header("📅 Periodefilters")
     geselecteerde_jaren = st.sidebar.multiselect(
         "Selecteer gewenste jaren:",
         options=beschikbare_jaren,
-        default=beschikbare_jaren
+        default=beschikbare_jaren,
+        key="shared_jaren_filter",
+    )
+    geselecteerde_periodes = st.sidebar.multiselect(
+        "Selecteer gewenste seizoenen of halfjaren:",
+        options=list(PERIODE_VOLGORDE),
+        default=list(PERIODE_VOLGORDE),
+        key="shared_periodes_filter",
+        help=(
+            "Winter: december t/m februari; voorjaar: maart t/m mei; "
+            "zomer: juni t/m augustus; herfst: september t/m november; "
+            "zomerhalfjaar: april t/m september; "
+            "winterhalfjaar: oktober t/m maart. "
+            "Bij meerdere keuzes worden de maanden gecombineerd."
+        ),
     )
 
-    if geselecteerde_jaren and not df_main.empty:
-        df_filtered = df_main[df_main['Datum'].dt.year.isin(geselecteerde_jaren)].copy()
+    if toon_aggregatiemethode:
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("📊 Aggregatiemethode")
+        st.sidebar.radio(
+            "Bereken ruimtelijke waarden als:",
+            options=["Gemiddelde", "Mediaan"],
+            index=0,
+            key="ruimtelijke_aggregatiemethode",
+            help=(
+                "Deze keuze wordt gebruikt in de Ruimtelijke analyse. "
+                "De mediaan is minder gevoelig voor uitschieters dan het gemiddelde."
+            ),
+        )
+
+    st.sidebar.markdown("---")
+    st.sidebar.info(
+        "Navigeer via het menu hierboven naar de verschillende analyses."
+    )
+    return tuple(geselecteerde_jaren), tuple(geselecteerde_periodes)
+
+
+def get_shared_sidebar(df_main):
+    """Achterwaarts compatibele Pandas-sidebar met jaar- en periodefilter."""
+    st.sidebar.header("📅 Periodefilters")
+
+    if not df_main.empty and 'Datum' in df_main.columns:
+        beschikbare_jaren = sorted(
+            df_main['Datum'].dt.year.dropna().unique(), reverse=True
+        )
     else:
-        df_filtered = df_main.copy()
-        
+        beschikbare_jaren = []
+
+    geselecteerde_jaren = st.sidebar.multiselect(
+        "Selecteer gewenste jaren:",
+        options=beschikbare_jaren,
+        default=beschikbare_jaren,
+        key="shared_jaren_filter",
+    )
+    geselecteerde_periodes = st.sidebar.multiselect(
+        "Selecteer gewenste seizoenen of halfjaren:",
+        options=list(PERIODE_VOLGORDE),
+        default=list(PERIODE_VOLGORDE),
+        key="shared_periodes_filter",
+        help=(
+            "Winter: december t/m februari; voorjaar: maart t/m mei; "
+            "zomer: juni t/m augustus; herfst: september t/m november; "
+            "zomerhalfjaar: april t/m september; "
+            "winterhalfjaar: oktober t/m maart. "
+            "Bij meerdere keuzes worden de maanden gecombineerd."
+        ),
+    )
+
+    df_filtered = df_main.copy()
+    if geselecteerde_jaren and not df_filtered.empty:
+        df_filtered = df_filtered[
+            df_filtered['Datum'].dt.year.isin(geselecteerde_jaren)
+        ].copy()
+
+    if geselecteerde_periodes and not df_filtered.empty:
+        geselecteerde_maanden = {
+            maand
+            for periode in geselecteerde_periodes
+            for maand in PERIODES[periode]
+        }
+        df_filtered = df_filtered[
+            df_filtered['Datum'].dt.month.isin(geselecteerde_maanden)
+        ].copy()
+
     st.sidebar.markdown("---")
     st.sidebar.subheader("📊 Aggregatiemethode")
     st.sidebar.radio(
@@ -749,10 +904,10 @@ def get_shared_sidebar(df_main):
             "De mediaan is minder gevoelig voor uitschieters dan het gemiddelde."
         ),
     )
-
     st.sidebar.markdown("---")
-    st.sidebar.info("Navigeer via het menu hierboven naar de verschillende analyses.")
-    
+    st.sidebar.info(
+        "Navigeer via het menu hierboven naar de verschillende analyses."
+    )
     return df_filtered
 
 @st.cache_data

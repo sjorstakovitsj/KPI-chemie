@@ -1,16 +1,70 @@
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from utils import load_data, get_shared_sidebar
+from utils import PERIODES, PERIODE_VOLGORDE, get_filter_options, query_data
 
 st.set_page_config(layout="wide", page_title="Risicoanalyse")
 
 st.header("Risicoanalyse")
 
-# Data en Sidebar
-df_main = load_data()
-df_filtered = get_shared_sidebar(df_main)
+# Lichte filteropties ophalen zonder de volledige dataset te laden.
+filter_options = get_filter_options()
+beschikbare_jaren = sorted(filter_options["jaren"], reverse=True)
+
+if not beschikbare_jaren:
+    st.error("🚨 Kritieke fout: geen beschikbare jaren gevonden in Parquet.")
+    st.stop()
+
+# Sidebar met behoud van dezelfde labels, defaults en session-state-key.
+st.sidebar.header("📅 Filter op jaren")
+geselecteerde_jaren = st.sidebar.multiselect(
+    "Selecteer gewenste jaren:",
+    options=beschikbare_jaren,
+    default=beschikbare_jaren,
+)
+
+# Gedeelde periodekeuze. De vaste key bewaart de selectie tussen pagina's die
+# dezelfde centrale PERIODES-definitie en session-state-key gebruiken.
+geselecteerde_periodes = st.sidebar.multiselect(
+    "Selecteer gewenste seizoenen of halfjaren:",
+    options=list(PERIODE_VOLGORDE),
+    default=list(PERIODE_VOLGORDE),
+    key="shared_periodes_filter",
+    help=(
+        "Winter: december t/m februari; voorjaar: maart t/m mei; "
+        "zomer: juni t/m augustus; herfst: september t/m november; "
+        "zomerhalfjaar: april t/m september; "
+        "winterhalfjaar: oktober t/m maart. "
+        "Bij meerdere keuzes worden de maanden gecombineerd."
+    ),
+)
+st.sidebar.markdown("---")
+st.sidebar.info("Navigeer via het menu hierboven naar de verschillende analyses.")
+
+# Predicate- en projection-pushdown. Alleen voor deze risicoanalyse relevante
+# kolommen worden uit Parquet gelezen. Een lege jaarselectie betekent, net als
+# voorheen, dat er geen jaarbeperking wordt toegepast.
+RISICO_COLUMNS = (
+    "Datum",
+    "Meetpunt",
+    "Stof",
+    "Stofgroep",
+    "Waarde",
+    "Eenheid",
+    "Limietsymbool",
+    "Signaleringswaarde",
+)
+df_filtered = query_data(
+    jaren=tuple(geselecteerde_jaren),
+    periodes=tuple(geselecteerde_periodes),
+    kolommen=RISICO_COLUMNS,
+)
+
+if df_filtered.empty:
+    st.error("🚨 Kritieke fout: de geselecteerde meetgegevens zijn leeg.")
+    st.stop()
 
 st.header("⚠️ Risicoanalyse op basis van signaleringswaarden)")
 st.markdown("Deze analyse toont stoffen waarvan **normen** bekend zijn. Deze stoffen worden getoetst aan een generieke signaleringswaarde van **0.1 ug/l**.")
@@ -158,7 +212,23 @@ if not df_risico.empty:
     # PRIORITEITENLIJST: TABEL VAN OVERTREDEN STOFFEN
     # ---------------------------------------------------------
     st.subheader("Prioriteringslijst")
-    st.markdown("Deze tabel toont welke stoffen de meeste overschrijdingen veroorzaken en hoe hoog de gemiddelde risico-intensiteit daarbij is.")
+    aggregatiemethode_risico = st.radio(
+        "Aggregatiemethode voor risico-intensiteit:",
+        options=["Gemiddelde", "Mediaan"],
+        index=0,
+        key="risico_aggregatiemethode",
+        horizontal=True,
+        help=(
+            "Deze keuze bepaalt uitsluitend de centrale risico-intensiteit "
+            "in de prioriteringslijst."
+        ),
+    )
+    risico_agg_func = "mean" if aggregatiemethode_risico == "Gemiddelde" else "median"
+    risico_agg_label = aggregatiemethode_risico.lower()
+    st.markdown(
+        "Deze tabel toont welke stoffen de meeste overschrijdingen veroorzaken "
+        f"en hoe hoog de **{risico_agg_label} risico-intensiteit** daarbij is."
+    )
 
     df_alleen_overschrijdingen = df_risico[df_risico['Boven_Signalering']].copy()
 
@@ -166,13 +236,13 @@ if not df_risico.empty:
         # Aggregeer de data per Stof
         df_prioriteit = df_alleen_overschrijdingen.groupby('Stof', observed=True).agg(
             Aantal_Overschrijdingen=('Stof', 'size'),
-            Gemiddeld_Perc_Overschrijding=('Percentage_van_drempelwaarde', 'mean'),
+            Centrale_Perc_Overschrijding=('Percentage_van_drempelwaarde', risico_agg_func),
             Max_Perc_Overschrijding=('Percentage_van_drempelwaarde', 'max')
         ).reset_index()
 
-        # Maak het Gemiddelde percentage leesbaar
-        df_prioriteit['Gemiddeld_Perc_Overschrijding'] = df_prioriteit['Gemiddeld_Perc_Overschrijding'].round(1).astype(str) + '%'
-        df_prioriteit['Max_Perc_Overschrijding'] = df_prioriteit['Max_Perc_Overschrijding'].round(1).astype(str) + '%'
+        # Rond af, maar behoud numerieke waarden voor correcte sortering.
+        df_prioriteit['Centrale_Perc_Overschrijding'] = df_prioriteit['Centrale_Perc_Overschrijding'].round(1)
+        df_prioriteit['Max_Perc_Overschrijding'] = df_prioriteit['Max_Perc_Overschrijding'].round(1)
 
         # Vind de stofgroep en het meetpunt voor context (optioneel, maar nuttig)
         df_context = df_alleen_overschrijdingen.groupby('Stof', observed=True).agg(
@@ -188,7 +258,7 @@ if not df_risico.empty:
             'Stof', 
             'Stofgroep',
             'Aantal_Overschrijdingen',
-            'Gemiddeld_Perc_Overschrijding',
+            'Centrale_Perc_Overschrijding',
             'Max_Perc_Overschrijding',
             'Meetpunten'
         ]].sort_values(by=['Aantal_Overschrijdingen', 'Max_Perc_Overschrijding'], ascending=[False, False])
@@ -204,13 +274,18 @@ if not df_risico.empty:
                     "Aantal Overschrijdingen",
                     help="Totaal aantal metingen boven de signaleringswaarde"
                 ),
-                "Gemiddeld_Perc_Overschrijding": st.column_config.TextColumn(
-                    "Gemiddelde % Boven drempelwaarde",
-                    help="De gemiddelde risico-intensiteit (als % van de drempelwaarde) van álle overschrijdende metingen."
+                "Centrale_Perc_Overschrijding": st.column_config.NumberColumn(
+                    f"{aggregatiemethode_risico} % van drempelwaarde",
+                    help=(
+                        f"De {risico_agg_label} risico-intensiteit van alle "
+                        "overschrijdende metingen voor deze stof."
+                    ),
+                    format="%.1f%%",
                 ),
-                "Max_Perc_Overschrijding": st.column_config.TextColumn(
-                    "Max % Boven drempelwaarde",
-                    help="De hoogste geregistreerde risico-intensiteit voor deze stof."
+                "Max_Perc_Overschrijding": st.column_config.NumberColumn(
+                    "Max % van drempelwaarde",
+                    help="De hoogste geregistreerde risico-intensiteit voor deze stof.",
+                    format="%.1f%%",
                 ),
                 "Meetpunten": st.column_config.TextColumn("Meetpunten"),
             }
@@ -360,40 +435,96 @@ if not df_risico.empty:
     # ---------------------------------------------------------
     st.markdown("---")
     st.subheader("Trends in overschrijdingen per jaar")
-    st.info("Meetpunten waar sprake is van signaleringswaardeoverschrijdingen worden hieronder weergegeven.")
-    
-    # Filter alleen de regels die daadwerkelijk een overschrijding zijn
+    aggregatiemethode_jaartrend = st.radio(
+        "Aggregatiemethode voor de samenvattende jaarlijn:",
+        options=["Gemiddelde", "Mediaan"],
+        index=0,
+        key="jaartrend_aggregatiemethode",
+        horizontal=True,
+        help=(
+            "Deze keuze geldt alleen voor de opvallende samenvattende lijn "
+            "in deze grafiek. De lijnen per meetpunt blijven ongewijzigd."
+        ),
+    )
+    jaartrend_agg_func = (
+        "mean"
+        if aggregatiemethode_jaartrend == "Gemiddelde"
+        else "median"
+    )
+    jaartrend_agg_label = aggregatiemethode_jaartrend.lower()
+    st.info(
+        "De dunne lijnen tonen het aantal overschrijdingen per individueel "
+        "meetpunt. De dikke zwarte lijn toont het "
+        f"**{jaartrend_agg_label} aantal overschrijdingen per meetpunt**."
+    )
+
+    # Filter alleen de regels die daadwerkelijk een overschrijding zijn.
     df_trends = df_risico[df_risico['Boven_Signalering']].copy()
-
     if not df_trends.empty:
-        # Stap 1: Tel overschrijdingen per Jaar én per Meetpunt
-        # observed=True toegevoegd voor optimalisatie
-        counts_per_mp = df_trends.groupby(['Jaar', 'Meetpunt'], observed=True).size().reset_index(name='Aantal_Overschrijdingen')
-        
-        # Stap 2: Bereken het gemiddelde aantal overschrijdingen per jaar
-        avg_per_year = counts_per_mp.groupby('Jaar')['Aantal_Overschrijdingen'].mean().reset_index(name='Gemiddeld_Aantal')
+        # Tel overschrijdingen per jaar en per meetpunt.
+        counts_per_mp = (
+            df_trends.groupby(['Jaar', 'Meetpunt'], observed=True)
+            .size()
+            .reset_index(name='Aantal_Overschrijdingen')
+        )
 
-        col_trend_1, col_trend_2 = st.columns(2)
+        # Bereken de dedicated jaaraggregatie over de beschikbare meetpunten.
+        centraal_per_year = (
+            counts_per_mp.groupby('Jaar')['Aantal_Overschrijdingen']
+            .agg(jaartrend_agg_func)
+            .reset_index(name='Centraal_Aantal')
+        )
 
-        with col_trend_1:
-            st.markdown("**Gemiddelde van alle meetpunten**")
-            fig_avg = px.line(
-                avg_per_year, x='Jaar', y='Gemiddeld_Aantal', markers=True,
-                title="Gemiddeld aantal overschrijdingen (van locaties met overschrijding)",
-                labels={'Gemiddeld_Aantal': 'Gemiddeld aantal', 'Jaar': 'Jaar'}
+        # Eén gecombineerde grafiek: individuele meetpunten als subtiele lijnen.
+        fig_jaartrend = px.line(
+            counts_per_mp,
+            x='Jaar',
+            y='Aantal_Overschrijdingen',
+            color='Meetpunt',
+            markers=True,
+            title=(
+                "Aantal signaleringswaardeoverschrijdingen per meetpunt "
+                f"met {jaartrend_agg_label} referentielijn"
+            ),
+            labels={
+                'Aantal_Overschrijdingen': 'Aantal overschrijdingen',
+                'Jaar': 'Jaar',
+            },
+        )
+        fig_jaartrend.update_traces(
+            line=dict(width=1.5),
+            marker=dict(size=6),
+            opacity=0.55,
+        )
+
+        # De gekozen centrummaat springt visueel duidelijk uit.
+        fig_jaartrend.add_trace(
+            go.Scatter(
+                x=centraal_per_year['Jaar'],
+                y=centraal_per_year['Centraal_Aantal'],
+                mode='lines+markers',
+                name=f"{aggregatiemethode_jaartrend} alle meetpunten",
+                line=dict(color='black', width=5),
+                marker=dict(
+                    color='white',
+                    size=11,
+                    line=dict(color='black', width=3),
+                    symbol='diamond',
+                ),
+                hovertemplate=(
+                    f"<b>{aggregatiemethode_jaartrend}</b><br>"
+                    "Jaar: %{x}<br>"
+                    "Aantal overschrijdingen: %{y:.2f}"
+                    "<extra></extra>"
+                ),
             )
-            fig_avg.update_xaxes(type='category', tickformat='d')
-            st.plotly_chart(fig_avg, width='stretch')
-
-        with col_trend_2:
-            st.markdown("**Per individueel meetpunt**")
-            fig_indiv = px.line(
-                counts_per_mp, x='Jaar', y='Aantal_Overschrijdingen', color='Meetpunt', markers=True,
-                title="Totaal aantal overschrijdingen per meetpunt",
-                labels={'Aantal_Overschrijdingen': 'Aantal overschrijdingen', 'Jaar': 'Jaar'}
-            )
-            fig_indiv.update_xaxes(type='category', tickformat='d')
-            st.plotly_chart(fig_indiv, width='stretch')
+        )
+        fig_jaartrend.update_xaxes(type='category', tickformat='d')
+        fig_jaartrend.update_layout(
+            legend_title_text='Meetpunt / samenvatting',
+            hovermode='x unified',
+        )
+        st.plotly_chart(fig_jaartrend, width='stretch')
     else:
         st.info("Onvoldoende data om een trendgrafiek van overschrijdingen te maken.")
         

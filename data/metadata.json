@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "built_at_local": "2026-09-21 22:40:33",
+  "built_at_utc": "2026-09-21T20:40:33.542696+00:00",
+  "row_count": 206134,
+  "column_count": 46,
+  "min_date": "2021-01-04T00:00:00",
+  "max_date": "2026-09-07T00:00:00",
+  "source_file": "IJG Chemie.csv"
+}

@@ -2,23 +2,83 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from utils import load_data, get_shared_sidebar
+from utils import (
+    PERIODES,
+    PERIODE_VOLGORDE,
+    get_filter_options,
+    query_data,
+)
 from datetime import datetime
 
 st.set_page_config(layout="wide", page_title="Ruimtelijke analyse")
 
 st.header("Ruimtelijke analyse")
 
-# Data en Sidebar
-df_main = load_data()
+# Lichte filteropties ophalen zonder de volledige dataset te laden.
+filter_options = get_filter_options()
+beschikbare_jaren = sorted(filter_options["jaren"], reverse=True)
+
+if not beschikbare_jaren:
+    st.error("🚨 Kritieke fout: geen beschikbare jaren gevonden in Parquet.")
+    st.stop()
 
 # Stel op deze pagina de mediaan als standaard in, maar respecteer een
 # bestaande keuze van de gebruiker tijdens dezelfde Streamlit-sessie.
 st.session_state.setdefault("ruimtelijke_aggregatiemethode", "Mediaan")
-df_filtered = get_shared_sidebar(df_main)
 
-# De shared sidebar bewaart de gekozen methode in session_state, zodat de
-# bestaande returnwaarde van get_shared_sidebar ongewijzigd blijft.
+# Sidebar met behoud van dezelfde labels, defaults en session-state-key.
+st.sidebar.header("📅 Filter op jaren")
+geselecteerde_jaren = st.sidebar.multiselect(
+    "Selecteer gewenste jaren:",
+    options=beschikbare_jaren,
+    default=beschikbare_jaren,
+)
+
+# Gedeelde periodekeuze voor alle gemigreerde dashboardpagina's.
+geselecteerde_periodes = st.sidebar.multiselect(
+    "Selecteer gewenste seizoenen of halfjaren:",
+    options=list(PERIODE_VOLGORDE),
+    default=list(PERIODE_VOLGORDE),
+    key="shared_periodes_filter",
+    help=(
+        "Winter: december t/m februari; voorjaar: maart t/m mei; "
+        "zomer: juni t/m augustus; herfst: september t/m november; "
+        "zomerhalfjaar: april t/m september; "
+        "winterhalfjaar: oktober t/m maart. "
+        "Bij meerdere keuzes worden de maanden gecombineerd."
+    ),
+)
+st.sidebar.markdown("---")
+st.sidebar.subheader("📊 Aggregatiemethode")
+st.sidebar.radio(
+    "Bereken ruimtelijke waarden als:",
+    options=["Gemiddelde", "Mediaan"],
+    key="ruimtelijke_aggregatiemethode",
+    help=(
+        "Deze keuze wordt gebruikt in de Ruimtelijke analyse. "
+        "De mediaan is minder gevoelig voor uitschieters dan het gemiddelde."
+    ),
+)
+st.sidebar.markdown("---")
+st.sidebar.info("Navigeer via het menu hierboven naar de verschillende analyses.")
+
+# Predicate- en projection-pushdown. Coördinaten worden direct meegenomen,
+# waardoor geen tweede volledige dataset voor de kaart nodig is.
+RUIMTELIJKE_COLUMNS = (
+    "Datum", "Meetpunt", "Stof", "Stofgroep", "Waarde", "Eenheid",
+    "Limietsymbool", "Latitude", "Longitude",
+)
+df_filtered = query_data(
+    jaren=tuple(geselecteerde_jaren),
+    periodes=tuple(geselecteerde_periodes),
+    kolommen=RUIMTELIJKE_COLUMNS,
+)
+
+if df_filtered.empty:
+    st.error("🚨 Kritieke fout: de geselecteerde meetgegevens zijn leeg.")
+    st.stop()
+
+# De sidebar bewaart de gekozen methode in session_state.
 aggregatiemethode = st.session_state.get(
     "ruimtelijke_aggregatiemethode", "Mediaan"
 )
@@ -28,11 +88,10 @@ agg_label_lower = agg_label.lower()
 
 st.header("🔍 Ruimtelijke analyse")
 
-# We werken hier verder met een kopie van df_filtered (al gefilterd op jaren sidebar)
+# We werken hier verder met een kopie van df_filtered (al gefilterd op jaren en perioden in de sidebar)
 # Optimalisatie: Kopieer alleen relevante kolommen
 # AANGEPAST: 'Limietsymbool' toegevoegd aan cols_needed voor de filter functionaliteit
-cols_needed = ['Datum', 'Meetpunt', 'Stof', 'Stofgroep', 'Waarde', 'Eenheid', 'Limietsymbool']
-df_space = df_filtered[cols_needed].copy()
+df_space = df_filtered.copy()
 
 # Datum bereik bepalen
 if not df_space.empty:
@@ -42,15 +101,13 @@ else:
 
 # Filters UI
 with st.container():
-    c_zomer, c_start, c_end = st.columns([1.5, 2, 2])
+    c_detectie, c_start, c_end = st.columns([1.5, 2, 2])
 
-    c_zomer.write("") # Spacing voor uitlijning
-    
-    # Checkbox 1: Zomerhalfjaar
-    zomerhalfjaar = c_zomer.checkbox("Alleen zomerhalfjaar (apr-sep)", value=False)
-    
-    # AANGEPAST: Checkbox 2: Alleen detecties (>RG)
-    alleen_detecties = c_zomer.checkbox("Alleen aangetroffen waarden (>RG)", value=True)
+    c_detectie.write("") # Spacing voor uitlijning
+
+    # De detectiefilter blijft behouden. De oude zomerhalfjaarcheckbox is
+    # vervangen door het centrale periodefilter in de sidebar.
+    alleen_detecties = c_detectie.checkbox("Alleen aangetroffen waarden (>RG)", value=True)
 
     start_date = c_start.date_input("Startdatum", value=min_d, min_value=min_d, max_value=max_d)
     end_date = c_end.date_input("Einddatum", value=max_d, min_value=min_d, max_value=max_d)
@@ -84,10 +141,6 @@ with st.container():
     # Start met basis datum filter
     mask_opt = (df_space['Datum'].dt.date >= start_date) & (df_space['Datum'].dt.date <= end_date)
     
-    # Filter op zomerhalfjaar indien aangevinkt
-    if zomerhalfjaar:
-        mask_opt &= (df_space['Datum'].dt.month >= 4) & (df_space['Datum'].dt.month <= 9)
-        
     # Filter op detectielimiet (>RG) voor de opties
     if alleen_detecties:
         mask_opt &= ~df_space['Limietsymbool'].astype(str).str.contains('<', na=False)
@@ -132,17 +185,12 @@ with st.container():
 # 1. Datum Filter
 mask_date = (df_space['Datum'].dt.date >= start_date) & (df_space['Datum'].dt.date <= end_date)
 
-# 2. Zomer Filter
-if zomerhalfjaar:
-    mask_zomer = (df_space['Datum'].dt.month >= 4) & (df_space['Datum'].dt.month <= 9)
-    mask_date = mask_date & mask_zomer
-
-# 3. Categorische filters
+# 2. Categorische filters
 mask_loc = df_space['Meetpunt'].isin(sel_loc) if sel_loc else pd.Series(False, index=df_space.index)
 mask_grp = df_space['Stofgroep'].isin(sel_grp) if sel_grp else pd.Series(True, index=df_space.index)
 mask_stof = df_space['Stof'].isin(sel_stof) if sel_stof else pd.Series(False, index=df_space.index)
 
-# 4. Detectie Limiet Filter (>RG)
+# 3. Detectie Limiet Filter (>RG)
 if alleen_detecties:
     mask_limit = ~df_space['Limietsymbool'].astype(str).str.contains('<', na=False)
 else:
@@ -172,7 +220,7 @@ else:
     loc_agg = dff_final.groupby("Meetpunt", observed=True)["Waarde"].agg(agg_func).reset_index()
 
     # Efficiënte coördinaten lookup (zonder grote merge op de hele dataset)
-    coords_ref = df_main[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().dropna()
+    coords_ref = df_filtered[['Meetpunt', 'Latitude', 'Longitude']].drop_duplicates().dropna()
 
     # Merge alleen de geaggregeerde tabel
     loc_map = pd.merge(loc_agg, coords_ref, on='Meetpunt', how='inner')

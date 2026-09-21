@@ -2,19 +2,48 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from utils import load_data, get_shared_sidebar
+from utils import get_filter_options, query_data
 
 st.set_page_config(layout="wide", page_title="KRW normcheck")
 
 st.header("KRW normcheck")
 
-# Data en Sidebar
-df_main = load_data()
-df_filtered = get_shared_sidebar(df_main)
+# Lichte filteropties ophalen zonder de volledige dataset te laden.
+filter_options = get_filter_options()
+beschikbare_jaren = sorted(filter_options["jaren"], reverse=True)
+
+if not beschikbare_jaren:
+    st.error("🚨 Kritieke fout: geen beschikbare jaren gevonden in Parquet.")
+    st.stop()
+
+# Sidebar met behoud van dezelfde labels, defaults en session-state-key.
+st.sidebar.header("📅 Filter op jaren")
+geselecteerde_jaren = st.sidebar.multiselect(
+    "Selecteer gewenste jaren:",
+    options=beschikbare_jaren,
+    default=beschikbare_jaren,
+)
+st.sidebar.markdown("---")
+st.sidebar.info("Navigeer via het menu hierboven naar de verschillende analyses.")
+
+# Predicate- en projection-pushdown. Een lege jaarselectie behoudt het eerdere
+# gedrag en betekent geen jaarbeperking.
+KRW_COLUMNS = (
+    "Datum", "Meetpunt", "Stof", "Stofgroep", "Waarde",
+    "Waarde_Origineel", "Eenheid", "Limietsymbool", "JG_MKN", "MAC_MKN",
+    "Achtergrondconcentratie", "Achtergrondcorrectie_Toegepast",
+)
+df_filtered = query_data(
+    jaren=tuple(geselecteerde_jaren),
+    kolommen=KRW_COLUMNS,
+)
+if df_filtered.empty:
+    st.error("🚨 Kritieke fout: de geselecteerde meetgegevens zijn leeg.")
+    st.stop()
 
 st.header("✅ KRW normcheck per meetpunt")
 
-# De achtergrondcorrectie wordt centraal in utils.load_data() toegepast.
+# De achtergrondcorrectie is tijdens de Parquet-build centraal toegepast.
 # Deze pagina gebruikt daarom de gecorrigeerde kolom 'Waarde' voor zowel
 # de JG-MKN- als de MAC-MKN-toetsing.
 if 'Achtergrondcorrectie_Toegepast' in df_filtered.columns:
@@ -35,7 +64,7 @@ else:
 col_filter_1, col_filter_2, col_filter_3 = st.columns(3)
 
 with col_filter_1:
-    all_meetpunten_norm = sorted(df_main['Meetpunt'].unique())
+    all_meetpunten_norm = sorted(filter_options['meetpunten'])
     default_meetpunten_norm = all_meetpunten_norm[:3] if all_meetpunten_norm else []
     selected_meetpunten_norm = st.multiselect(
         "📍 Selecteer meetpunt(en)",

@@ -6,9 +6,13 @@ import pandas as pd
 import numpy as np
 # Importeer de nieuwe functies
 from utils import (
-    load_data, create_gauge, get_shared_sidebar, 
-    calculate_metrics, calculate_compliance_details, 
-    prepare_heatmap_data, prepare_sunburst_data
+    create_gauge,
+    get_filter_options,
+    query_data,
+    calculate_metrics,
+    calculate_compliance_details,
+    prepare_heatmap_data,
+    prepare_sunburst_data,
 )
 
 st.set_page_config(layout="wide", page_title="Waterkwaliteit KPI Dashboard", page_icon="💧")
@@ -17,6 +21,19 @@ st.title("💧 Dashboard chemische waterkwaliteit MN")
 # Beheer toekomstige updates door uitsluitend nieuwe dictionaries bovenaan
 # deze lijst toe te voegen. De nieuwste update staat altijd als eerste.
 APP_UPDATES = [
+    {
+        "datum": "21 september 2026",
+        "titel": "Seizoensfilters en uitgebreidere trendanalyse",
+        "wijzigingen": [
+            "De analysepagina's ondersteunen nu winter, voorjaar, zomer, herfst, zomerhalfjaar en winterhalfjaar.",
+            "De losse zomerhalfjaarfilter in de ruimtelijke analyse is vervangen door de centrale periodefilter.",
+            "Bij individuele meetreeksen is Mann-Kendall toegevoegd; bij een beperkte seizoensselectie wordt automatisch Seasonal Mann-Kendall gebruikt.",
+            "Metingen onder de rapportagegrens worden uitgesloten van de Mann-Kendall-toets en de aantallen onder en boven de rapportagegrens worden getoond.",
+            "Niet-relevante aggregatiekeuzes zijn van diverse pagina's verwijderd en detailmeters op Home zijn standaard ingeklapt.",
+            "De risicoanalyse heeft aparte keuzes voor gemiddelde of mediaan bij de prioriteringslijst en de jaartrend.",
+            "De jaartrend in de risicoanalyse combineert meetpuntlijnen met een duidelijk gemarkeerde gemiddelde- of mediaanlijn.",
+        ],
+    },
     {
         "datum": "11 september 2026",
         "titel": "Betere norm- en risicobeoordeling",
@@ -92,15 +109,58 @@ if st.button("Bekijk de laatste updates", key="open_updatevenster"):
     st.session_state.updatevenster_open = True
     st.rerun()
 
-# 1. Data Laden
-df_main = load_data()
+# 1. Lichte filteropties ophalen via een afzonderlijk gecachete DuckDB-query.
+# Hierdoor hoeft de volledige analytische dataset niet te worden geladen om de
+# beschikbare jaren en het totale aantal meetpunten te bepalen.
+filter_options = get_filter_options()
+available_filter_years = sorted(filter_options["jaren"], reverse=True)
 
-if df_main.empty:
-    st.error("🚨 Kritieke fout: de geladen data is leeg.")
+if not available_filter_years:
+    st.error(
+        "🚨 Kritieke fout: er zijn geen beschikbare jaren in het "
+        "Parquetbestand gevonden."
+    )
     st.stop()
 
-# 2. Sidebar & Filteren
-df_filtered = get_shared_sidebar(df_main)
+# 2. Sidebar en query-pushdown.
+st.sidebar.header("📅 Filter op jaren")
+selected_years = st.sidebar.multiselect(
+    "Selecteer gewenste jaren:",
+    options=available_filter_years,
+    default=available_filter_years,
+)
+
+st.sidebar.markdown("---")
+st.sidebar.info(
+    "Navigeer via het menu hierboven naar de verschillende analyses."
+)
+
+# Lege jaarselectie behoudt het eerdere gedrag: geen jaarbeperking.
+# Alleen de kolommen die Home daadwerkelijk gebruikt worden uit Parquet gelezen.
+HOME_COLUMNS = (
+    "Datum",
+    "Meetpunt",
+    "Stof",
+    "Waarde",
+    "Waarde_Origineel",
+    "Eenheid",
+    "Limietsymbool",
+    "Latitude",
+    "Longitude",
+    "JG_MKN",
+    "MAC_MKN",
+    "Achtergrondconcentratie",
+    "Achtergrondcorrectie_Toegepast",
+)
+
+df_filtered = query_data(
+    jaren=tuple(selected_years),
+    kolommen=HOME_COLUMNS,
+)
+
+if df_filtered.empty:
+    st.error("🚨 Kritieke fout: de geselecteerde meetgegevens zijn leeg.")
+    st.stop()
 
 # 3. Dynamische Scorekaart: Recent vs Selectie
 available_years = sorted(df_filtered['Datum'].dt.year.unique(), reverse=True)
@@ -150,7 +210,7 @@ if len(available_years) >= 1:
 
 # 4. KRW-check & Heatmap
 st.header("🔴 KRW-check: overschrijdende stoffen")
-# De achtergrondcorrectie wordt centraal in utils.load_data() toegepast.
+# De achtergrondcorrectie is tijdens de Parquet-build centraal toegepast.
 # Toon hier transparant hoeveel meetregels in de huidige selectie zijn gecorrigeerd.
 if 'Achtergrondcorrectie_Toegepast' in df_filtered.columns:
     aantal_gecorrigeerd = int(
@@ -258,7 +318,7 @@ pct_mac_total = (df_mac_ov['Waarde'] <= df_mac_ov['MAC_MKN']).mean() * 100 if no
 col_kpi, col_gauges, col_map = st.columns([1, 2, 2])
 
 with col_kpi:
-    st.metric("Unieke meetpunten", df_main['Meetpunt'].nunique())
+    st.metric("Unieke meetpunten", len(filter_options["meetpunten"]))
     # Metingen zonder norm: totaal - (metingen met JG of MAC)
     df_with_norm = df_filtered.dropna(subset=['JG_MKN', 'MAC_MKN'], how='all')
     st.metric("Metingen zonder JG/MAC norm", len(df_filtered) - len(df_with_norm))
@@ -290,7 +350,7 @@ unieke_meetpunten = sorted(df_filtered['Meetpunt'].unique())
 jg_stats = df_jg_ov.groupby('Meetpunt', observed=True).apply(lambda x: (x['Waarde'] <= x['JG_MKN']).mean() * 100)
 mac_stats = df_mac_ov.groupby('Meetpunt', observed=True).apply(lambda x: (x['Waarde'] <= x['MAC_MKN']).mean() * 100)
 
-with st.expander(f"Toon detailmeters voor alle {len(unieke_meetpunten)} meetpunten", expanded=True):
+with st.expander(f"Toon detailmeters voor alle {len(unieke_meetpunten)} meetpunten", expanded=False):
     for mp in unieke_meetpunten:
         p_jg = jg_stats.get(mp, None)
         p_mac = mac_stats.get(mp, None)
