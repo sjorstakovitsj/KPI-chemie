@@ -2,7 +2,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from utils import get_filter_options, query_data
+from chemistry_app.services.page_data_service import get_filter_options, query_data
 
 st.set_page_config(layout="wide", page_title="KRW normcheck")
 

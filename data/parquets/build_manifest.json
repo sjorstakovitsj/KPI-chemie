@@ -1,0 +1,68 @@
+{
+  "build_id": "20261119T155722Z",
+  "built_at_utc": "2026-11-19T15:57:22.402396+00:00",
+  "pipeline_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "source": {
+    "path": "C:\\Users\\benya\\Documents\\Python projects\\KPI Chemie\\IJG Chemie.csv",
+    "bytes": 81195068,
+    "mtime_ns": 1795014575669101900,
+    "sha256": "8d0545760b297f97dacfd27245b4064aafe2fd6c4fed0409a7ccee816cc58a42"
+  },
+  "artifacts": [
+    {
+      "name": "chemistry_measurements",
+      "path": "C:\\Users\\benya\\Documents\\Python projects\\KPI Chemie\\data\\parquets\\chemistry_measurements.parquet",
+      "rows": 240312,
+      "bytes": 5150552,
+      "sha256": "d12047842f34f128acc55716758a6a3752ebae628f6caa6cab94f822bac7bd09"
+    },
+    {
+      "name": "chemistry_standards",
+      "path": "C:\\Users\\benya\\Documents\\Python projects\\KPI Chemie\\data\\parquets\\chemistry_standards.parquet",
+      "rows": 336,
+      "bytes": 19373,
+      "sha256": "a93f5e772586295dd5f1037e8d129d8187f7d2d3a815232f095895080db72c10"
+    },
+    {
+      "name": "chemistry_reference",
+      "path": "C:\\Users\\benya\\Documents\\Python projects\\KPI Chemie\\data\\parquets\\chemistry_reference.parquet",
+      "rows": 54,
+      "bytes": 5454,
+      "sha256": "a7175882ab1a480bc9a73b8ec9c1c2c87ec011ff5e1011be384517f7d30c2512"
+    }
+  ],
+  "validation": {
+    "chemistry_measurements": {
+      "dataset": "chemistry_measurements",
+      "input_rows": 240312,
+      "output_rows": 240312,
+      "duplicate_rows": 0,
+      "rejected_rows": 0,
+      "warnings": [
+        "1961 bronregels zonder meetwaarde_lokaalid; technische measurement_id is wel aangemaakt.",
+        "1843 bronwaarden met bekende hiaatcode zijn als ontbrekende meetwaarde opgeslagen.",
+        "54 bronregels zonder meetwaarde_lokaalid; technische measurement_id is wel aangemaakt.",
+        "1695 bronwaarden met bekende hiaatcode zijn als ontbrekende meetwaarde opgeslagen.",
+        "170 bronregels zonder meetwaarde_lokaalid; technische measurement_id is wel aangemaakt.",
+        "523 bronwaarden met bekende hiaatcode zijn als ontbrekende meetwaarde opgeslagen."
+      ]
+    },
+    "chemistry_standards": {
+      "dataset": "chemistry_standards",
+      "input_rows": 336,
+      "output_rows": 336,
+      "duplicate_rows": 0,
+      "rejected_rows": 0,
+      "warnings": []
+    },
+    "chemistry_reference": {
+      "dataset": "chemistry_reference",
+      "input_rows": 54,
+      "output_rows": 54,
+      "duplicate_rows": 0,
+      "rejected_rows": 0,
+      "warnings": []
+    }
+  }
+}
