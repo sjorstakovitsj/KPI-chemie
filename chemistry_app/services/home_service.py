@@ -73,6 +73,40 @@ class HomeDashboardData:
 
 
 
+
+def _use_canonical_locations(measurements: pd.DataFrame) -> pd.DataFrame:
+    """Use canonical ``Locatiecode`` for every Home location value.
+
+    ``page_data_service`` preserves both the presentation field ``Meetpunt``
+    and the canonical source field ``Locatiecode``. Home deliberately exposes
+    only the canonical source identifier in calculations, tables and charts.
+    """
+    if "Locatiecode" not in measurements.columns:
+        raise KeyError(
+            "Home vereist de canonieke bronkolom 'Locatiecode'."
+        )
+
+    result = measurements.copy()
+    canonical_locations = (
+        result["Locatiecode"]
+        .astype("string")
+        .str.strip()
+        .str.casefold()
+        .replace("", pd.NA)
+    )
+
+    missing_mask = canonical_locations.isna()
+    if missing_mask.any():
+        missing_count = int(missing_mask.sum())
+        raise ValueError(
+            "Home bevat "
+            f"{missing_count:,} meetregels zonder canonieke Locatiecode."
+        )
+
+    result["Locatiecode"] = canonical_locations
+    result["Meetpunt"] = canonical_locations
+    return result
+
 def get_home_years() -> tuple[int, ...]:
     """Return available Home years in descending display order."""
     options = get_filter_options()
@@ -293,7 +327,7 @@ def prepare_recent_exceedances(
 
 
 def display_locations(measurements: pd.DataFrame) -> tuple[str, ...]:
-    """Return unique display locations in deterministic case-insensitive order."""
+    """Return unique canonical locations in deterministic order."""
     if "Meetpunt" not in measurements.columns:
         return ()
     return tuple(
@@ -320,6 +354,7 @@ def build_home_dashboard(
         jaren=selected_years,
         kolommen=HOME_COLUMNS,
     )
+    measurements = _use_canonical_locations(measurements)
     current = select_period(measurements, (current_year,))
     comparison_frame = select_period(measurements, comparison.years)
 

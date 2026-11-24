@@ -1,283 +1,132 @@
+"""Thin Streamlit page for the KRW normcheck."""
+from __future__ import annotations
+
 import streamlit as st
-import plotly.express as px
-import pandas as pd
-import numpy as np
-from chemistry_app.services.page_data_service import get_filter_options, query_data
 
-st.set_page_config(layout="wide", page_title="KRW normcheck")
+from chemistry_app.services.krw_normcheck_dashboard_service import (
+    build_krw_normcheck_dashboard,
+)
+from chemistry_app.services.krw_normcheck_service import (
+    get_krw_normcheck_options,
+)
+from chemistry_app.ui.krw_normcheck_renderers import (
+    render_jg_results,
+    render_mac_results,
+)
 
+
+def _initialize_multiselect(
+    key: str,
+    valid_options: tuple[str, ...],
+    *,
+    fallback_count: int,
+) -> None:
+    """Keep session-state selections valid after cascading filters change."""
+    current = st.session_state.get(key, [])
+    valid = [value for value in current if value in valid_options]
+    if not valid and valid_options:
+        valid = list(valid_options[:fallback_count])
+    st.session_state[key] = valid
+
+
+st.set_page_config(
+    layout="wide",
+    page_title="KRW normcheck",
+)
 st.header("KRW normcheck")
+st.subheader("✅ KRW normcheck per meetpunt")
 
-# Lichte filteropties ophalen zonder de volledige dataset te laden.
-filter_options = get_filter_options()
-beschikbare_jaren = sorted(filter_options["jaren"], reverse=True)
-
-if not beschikbare_jaren:
-    st.error("🚨 Kritieke fout: geen beschikbare jaren gevonden in Parquet.")
-    st.stop()
-
-# Sidebar met behoud van dezelfde labels, defaults en session-state-key.
-st.sidebar.header("📅 Filter op jaren")
-geselecteerde_jaren = st.sidebar.multiselect(
+all_options = get_krw_normcheck_options()
+years = st.sidebar.multiselect(
     "Selecteer gewenste jaren:",
-    options=beschikbare_jaren,
-    default=beschikbare_jaren,
+    options=all_options.years,
+    default=all_options.years,
 )
-st.sidebar.markdown("---")
-st.sidebar.info("Navigeer via het menu hierboven naar de verschillende analyses.")
-
-# Predicate- en projection-pushdown. Een lege jaarselectie behoudt het eerdere
-# gedrag en betekent geen jaarbeperking.
-KRW_COLUMNS = (
-    "Datum", "Meetpunt", "Stof", "Stofgroep", "Waarde",
-    "Waarde_Origineel", "Eenheid", "Limietsymbool", "JG_MKN", "MAC_MKN",
-    "Achtergrondconcentratie", "Achtergrondcorrectie_Toegepast",
-)
-df_filtered = query_data(
-    jaren=tuple(geselecteerde_jaren),
-    kolommen=KRW_COLUMNS,
-)
-if df_filtered.empty:
-    st.error("🚨 Kritieke fout: de geselecteerde meetgegevens zijn leeg.")
+if not years:
+    st.warning("Selecteer minimaal één jaar.")
     st.stop()
 
-st.header("✅ KRW normcheck per meetpunt")
+year_options = get_krw_normcheck_options(
+    years=tuple(years),
+)
 
-# De achtergrondcorrectie is tijdens de Parquet-build centraal toegepast.
-# Deze pagina gebruikt daarom de gecorrigeerde kolom 'Waarde' voor zowel
-# de JG-MKN- als de MAC-MKN-toetsing.
-if 'Achtergrondcorrectie_Toegepast' in df_filtered.columns:
-    aantal_gecorrigeerd = int(
-        df_filtered['Achtergrondcorrectie_Toegepast'].fillna(False).sum()
-    )
-    st.info(
-        "Achtergrondcorrectie is toegepast op "
-        f"{aantal_gecorrigeerd:,} meetregels in de huidige jaarselectie. "
-        "De oorspronkelijke meetwaarden blijven beschikbaar voor controle."
-    )
-else:
-    st.warning(
-        "De kolom 'Achtergrondcorrectie_Toegepast' ontbreekt. "
-        "Controleer of de actuele utils.py en de achtergrondcorrectietabel worden gebruikt."
-    )
+_initialize_multiselect(
+    "tab2_meetpunten_select",
+    year_options.locations,
+    fallback_count=3,
+)
+locations = st.multiselect(
+    "📍 Selecteer meetpunt(en)",
+    options=year_options.locations,
+    key="tab2_meetpunten_select",
+)
 
-col_filter_1, col_filter_2, col_filter_3 = st.columns(3)
+location_options = get_krw_normcheck_options(
+    years=tuple(years),
+    locations=tuple(locations),
+)
+_initialize_multiselect(
+    "tab2_stofgroep_select",
+    location_options.substance_groups,
+    fallback_count=1,
+)
+groups = st.multiselect(
+    "Selecteer stofgroep",
+    options=location_options.substance_groups,
+    key="tab2_stofgroep_select",
+)
 
-with col_filter_1:
-    all_meetpunten_norm = sorted(filter_options['meetpunten'])
-    default_meetpunten_norm = all_meetpunten_norm[:3] if all_meetpunten_norm else []
-    selected_meetpunten_norm = st.multiselect(
-        "📍 Selecteer meetpunt(en)",
-        options=all_meetpunten_norm,
-        default=default_meetpunten_norm,
-        key="tab2_meetpunten_select"
-    )
+substance_options = get_krw_normcheck_options(
+    years=tuple(years),
+    locations=tuple(locations),
+    substance_groups=tuple(groups),
+)
+_initialize_multiselect(
+    "tab2_stoffen_select",
+    substance_options.substances,
+    fallback_count=3,
+)
+substances = st.multiselect(
+    "🔎 Selecteer stof(fen)",
+    options=substance_options.substances,
+    key="tab2_stoffen_select",
+)
 
-with col_filter_2:
-    # 1. Bepaal eenmalig welke stoffen een norm hebben (JG_MKN of MAC_MKN is niet NaN)
-    stoffen_met_norm_df = df_filtered[df_filtered[['JG_MKN', 'MAC_MKN']].notna().any(axis=1)].copy()
+detections_only = st.checkbox(
+    "Alleen aangetroffen waarden meenemen (>RG) in normcheck",
+    value=True,
+)
 
-    # 2. Gebruik ALLEEN de stofgroepen die deze genormeerde stoffen bevatten
-    stofgroep_opties = sorted(stoffen_met_norm_df['Stofgroep'].unique())
-    stofgroep_selected_tab2 = st.multiselect(
-        "Selecteer stofgroep",
-        options=stofgroep_opties,
-        default=stofgroep_opties[0] if stofgroep_opties else None,
-        key="tab2_stofgroep_select"
-    )
-
-with col_filter_3:
-    if stofgroep_selected_tab2:
-        # Filter de genormeerde stoffen-dataframe op de geselecteerde stofgroepen
-        filtered_stoffen_df = stoffen_met_norm_df[stoffen_met_norm_df['Stofgroep'].isin(stofgroep_selected_tab2)]
-        
-        # 3. Nu bevat all_stoffen_norm enkel stoffen die:
-        #    a) een norm hebben (MAC of JG)
-        #    b) behoren tot de geselecteerde stofgroep(en)
-        all_stoffen_norm = sorted(filtered_stoffen_df['Stof'].unique())
-    else:
-        # Als er geen stofgroep geselecteerd is, toon alle genormeerde stoffen
-        all_stoffen_norm = sorted(stoffen_met_norm_df['Stof'].unique())
-
-    # De logica voor slimme defaults is nu overbodig omdat all_stoffen_norm al is gefilterd
-    # We kunnen de 'default_stoffen_norm' gewoon als de eerste 3 van de gefilterde lijst nemen.
-    default_stoffen_norm = all_stoffen_norm[:3] if len(all_stoffen_norm) > 0 else []
-
-    selected_stoffen_norm = st.multiselect(
-        "🔎 Selecteer stof(fen)",
-        options=all_stoffen_norm,
-        default=default_stoffen_norm,
-        key="tab2_stoffen_select"
-    )
-
-# Checkbox voor filteren op detecties
-alleen_detecties = st.checkbox("Alleen aangetroffen waarden meenemen (>RG) in normcheck", value=True)
-
-if not selected_stoffen_norm or not selected_meetpunten_norm:
+if not locations or not substances:
     st.warning("Selecteer minstens één stof en één meetpunt.")
-else:
-    # --- JG-MKN Toetsing (Jaargemiddelden) ---
-    st.subheader("Jaargemiddelde toetsing (JG-MKN)")
-    st.markdown("Onderstaande grafieken tonen het **jaargemiddelde** per stof en meetpunt, afgezet tegen de norm (rode stippellijn).")
+    st.stop()
 
-    # 1. Filter basis selectie
-    df_jg = df_filtered[
-        (df_filtered['Stof'].isin(selected_stoffen_norm)) &
-        (df_filtered['Meetpunt'].isin(selected_meetpunten_norm)) &
-        (df_filtered['JG_MKN'].notna())
-    ].copy()
+dashboard = build_krw_normcheck_dashboard(
+    years=tuple(years),
+    locations=tuple(locations),
+    substance_groups=tuple(groups),
+    substances=tuple(substances),
+    detections_only=detections_only,
+)
 
-    # 2. Filter op < waarden indien aangevinkt
-    if alleen_detecties and not df_jg.empty:
-        df_jg = df_jg[~df_jg['Limietsymbool'].astype(str).str.contains('<', na=False)]
+st.info(
+    "Achtergrondcorrectie is toegepast op "
+    f"{dashboard.background_corrected_rows:,} meetregels "
+    "binnen de huidige selectie."
+)
 
-    if not df_jg.empty:
-        df_jg['Jaar'] = df_jg['Datum'].dt.year
+st.subheader("Jaargemiddelde toetsing (JG-MKN)")
+st.caption(
+    "Jaargemiddelden per stof en meetpunt, afgezet tegen de JG-MKN."
+)
+render_jg_results(dashboard.jg.annual_means)
 
-        # 3. Bereken jaargemiddelde per jaar/meetpunt/stof
-        # observed=True is belangrijk voor performance
-        df_gemiddelde = df_jg.groupby(['Jaar', 'Meetpunt', 'Stof'], observed=True)['Waarde'].mean().reset_index()
-
-        # Voeg norm toe
-        norm_lookup = df_jg[['Stof', 'JG_MKN', 'Eenheid']].drop_duplicates()
-        df_gemiddelde = pd.merge(df_gemiddelde, norm_lookup, on='Stof', how='left')
-
-        # Maak Jaar string voor categorische x-as
-        df_gemiddelde['JaarStr'] = df_gemiddelde['Jaar'].astype(str)
-
-        # 4. Loop per stof om een duidelijke grafiek te maken
-        # (Samenvoegen in één grafiek werkt slecht door verschillende schalen/eenheden)
-        for stof in selected_stoffen_norm:
-            df_stof = df_gemiddelde[df_gemiddelde['Stof'] == stof]
-            
-            if df_stof.empty:
-                continue
-
-            # Haal norm en eenheid op voor titel/lijn
-            norm_waarde = df_stof['JG_MKN'].iloc[0]
-            eenheid = df_stof['Eenheid'].iloc[0]
-
-            # Bepaal kleuren: Rood als gemiddelde > norm, anders standaard kleur per meetpunt?
-            # Standaard Plotly group bar is beter per meetpunt gekleurd voor vergelijking locaties.
-            # We voegen de norm toe als lijn.
-            
-            fig = px.bar(
-                df_stof,
-                x="JaarStr",
-                y="Waarde",
-                color="Meetpunt",
-                barmode="group",
-                title=f"Toetsing {stof} (Norm: {norm_waarde} {eenheid})",
-                labels={"Waarde": f"Concentratie ({eenheid})", "JaarStr": "Jaar"},
-                hover_data={"Waarde": ":.2f", "JG_MKN": ":.2f"}
-            )
-
-            # Voeg de Norm lijn toe
-            fig.add_hline(
-                y=norm_waarde, 
-                line_dash="dash", 
-                line_color="red", 
-                annotation_text=f"JG-MKN ({norm_waarde})",
-                annotation_position="top right"
-            )
-            
-            # NIEUW: Forceer discrete weergave van jaartallen
-            fig.update_xaxes(type='category', tickangle=0) 
-
-            st.plotly_chart(fig, width='stretch')
-            
-        # Optioneel: Toon de gecorrigeerde jaargemiddelden in een tabel.
-        with st.expander("Toon berekende jaargemiddelden in tabel"):
-            display_cols = ['Jaar', 'Meetpunt', 'Stof', 'Waarde', 'JG_MKN']
-            st.dataframe(
-                df_gemiddelde[display_cols]
-                .sort_values(['Stof', 'Jaar', 'Meetpunt']),
-                width='stretch',
-                column_config={
-                    'Waarde': st.column_config.NumberColumn(
-                        'Gecorrigeerd jaargemiddelde', format='%.4g'
-                    ),
-                    'JG_MKN': st.column_config.NumberColumn(
-                        'JG-MKN', format='%.4g'
-                    ),
-                },
-            )
-
-    else:
-        st.info("Geen data beschikbaar met JG-MKN norm voor de huidige selectie (of alles weggefilterd door >RG filter).")
-
-    st.markdown("---")
-
-    # --- MAC-MKN Toetsing ---
-    st.subheader("Maximale aanvaardbare concentratie (MAC-MKN)")
-    st.markdown("Percentage metingen dat de pieknorm overschrijdt.")
-
-    df_mac = df_filtered[
-        (df_filtered['Stof'].isin(selected_stoffen_norm)) &
-        (df_filtered['Meetpunt'].isin(selected_meetpunten_norm)) &
-        (df_filtered['MAC_MKN'].notna())
-    ].copy()
-
-    # Filter op < waarden indien aangevinkt
-    if alleen_detecties and not df_mac.empty:
-        df_mac = df_mac[~df_mac['Limietsymbool'].astype(str).str.contains('<', na=False)]
-
-    if not df_mac.empty:
-        df_mac['Overschrijding'] = df_mac['Waarde'] > df_mac['MAC_MKN']
-
-        # Hier behouden we de "Percentage" weergave, want MAC gaat over pieken, niet jaargemiddelden
-        mac_overschrijding_pct = df_mac.groupby(['Meetpunt', 'Stof'], observed=True)['Overschrijding'].mean().reset_index()
-        mac_overschrijding_pct['Overschrijding (%)'] = (mac_overschrijding_pct['Overschrijding'] * 100).round(2)
-
-        mac_overschrijding_pct['PlotLabel'] = mac_overschrijding_pct['Meetpunt'].astype(str) + ' (' + mac_overschrijding_pct['Stof'].astype(str) + ')'
-
-        fig_mac = px.bar(
-            mac_overschrijding_pct.sort_values(['Stof', 'Meetpunt']),
-            x='PlotLabel', y='Overschrijding (%)',
-            title='Percentage individuele metingen boven MAC-MKN',
-            color='Meetpunt',
-            color_continuous_scale=px.colors.sequential.Reds
-        )
-        st.plotly_chart(fig_mac, width='stretch')
-
-        # Maak de toegepaste achtergrondcorrectie controleerbaar op regelniveau.
-        controlekolommen = [
-            'Datum', 'Meetpunt', 'Stof', 'Waarde', 'Eenheid', 'MAC_MKN'
-        ]
-        extra_kolommen = [
-            'Waarde_Origineel',
-            'Achtergrondconcentratie',
-            'Achtergrondcorrectie_Toegepast',
-        ]
-        for kolom in reversed(extra_kolommen):
-            if kolom in df_mac.columns:
-                controlekolommen.insert(3, kolom)
-
-        with st.expander("Toon individuele MAC-metingen en achtergrondcorrectie"):
-            st.dataframe(
-                df_mac[controlekolommen]
-                .sort_values(['Stof', 'Meetpunt', 'Datum'], ascending=[True, True, False]),
-                width='stretch',
-                column_config={
-                    'Waarde_Origineel': st.column_config.NumberColumn(
-                        'Oorspronkelijke concentratie', format='%.4g'
-                    ),
-                    'Achtergrondconcentratie': st.column_config.NumberColumn(
-                        'Achtergrondconcentratie', format='%.4g'
-                    ),
-                    'Waarde': st.column_config.NumberColumn(
-                        'Gecorrigeerde concentratie', format='%.4g'
-                    ),
-                    'Achtergrondcorrectie_Toegepast': st.column_config.CheckboxColumn(
-                        'Achtergrondcorrectie toegepast'
-                    ),
-                    'MAC_MKN': st.column_config.NumberColumn(
-                        'MAC-MKN', format='%.4g'
-                    ),
-                },
-            )
-    else:
-        if alleen_detecties:
-            st.info("Geen waarden boven de rapportagegrens gevonden voor de MAC-MKN selectie.")
-        else:
-            st.info("Geen MAC-MKN data voor selectie.")
+st.markdown("---")
+st.subheader("Maximale aanvaardbare concentratie (MAC-MKN)")
+st.caption(
+    "Aandeel individuele metingen dat de pieknorm overschrijdt."
+)
+render_mac_results(
+    dashboard.mac.exceedance_percentages,
+    dashboard.mac.measurement_details,
+)
