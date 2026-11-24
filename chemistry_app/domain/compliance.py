@@ -63,17 +63,17 @@ def calculate_compliance(
     for column in text_columns:
         calc[column] = calc[column].replace(r"^\s*$", pd.NA, regex=True)
 
-    # Preserve all measurements with a usable location code when the readable
-    # location name is absent.
-    calc["__location"] = calc[location_column]
+    # Canonical source code is the only location identity for compliance.
     if location_code_column in calc.columns:
-        fallback_mask = (
-            calc["__location"].isna()
-            & calc[location_code_column].notna()
-        )
-        calc["__location"] = calc["__location"].fillna(
+        calc["__location"] = (
             calc[location_code_column]
+            .astype("string")
+            .str.strip()
+            .str.casefold()
+            .replace("", pd.NA)
         )
+    else:
+        calc["__location"] = calc[location_column]
 
 
     missing_context = calc[["__location", substance_column]].isna().any(axis=1)
@@ -111,6 +111,17 @@ def calculate_compliance(
     )
 
     for standard_type, standard_column, aggregation in assessments:
+        standard_counts = (
+            calc.groupby(keys, observed=True, dropna=False)[standard_column]
+            .nunique(dropna=True)
+        )
+        conflicts = standard_counts.loc[standard_counts.gt(1)]
+        if not conflicts.empty:
+            raise ValueError(
+                f"Meerdere {standard_type.value}-waarden gevonden binnen "
+                "dezelfde locatie-, jaar- en stofcontext."
+            )
+
         grouped_results = (
             calc.groupby(keys, observed=True, dropna=False)
             .agg(
