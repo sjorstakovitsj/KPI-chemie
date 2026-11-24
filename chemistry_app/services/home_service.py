@@ -10,12 +10,15 @@ from chemistry_app.domain.censored_values import (
 )
 from chemistry_app.domain.compliance import calculate_compliance
 from chemistry_app.domain.schemas import ComplianceStatus
+from chemistry_app.domain.krw_assessment_policy import (
+    prepare_krw_assessment_measurements,
+)
 from chemistry_app.services.page_data_service import get_filter_options, query_data
 from chemistry_app.services.visualization_data_service import (
     HeatmapData,
     SunburstData,
-    prepare_heatmap_data,
-    prepare_sunburst_data,
+    prepare_heatmap_from_compliance,
+    prepare_sunburst_from_compliance,
 )
 
 HOME_COLUMNS = (
@@ -23,6 +26,9 @@ HOME_COLUMNS = (
     "Meetpunt",
     "Locatiecode",
     "Stof",
+    "Parametercode",
+    "Stofgroep",
+    "Hoedanigheid",
     "Waarde",
     "Waarde_Origineel",
     "Eenheid",
@@ -72,40 +78,6 @@ class HomeDashboardData:
 
 
 
-
-
-def _use_canonical_locations(measurements: pd.DataFrame) -> pd.DataFrame:
-    """Use canonical ``Locatiecode`` for every Home location value.
-
-    ``page_data_service`` preserves both the presentation field ``Meetpunt``
-    and the canonical source field ``Locatiecode``. Home deliberately exposes
-    only the canonical source identifier in calculations, tables and charts.
-    """
-    if "Locatiecode" not in measurements.columns:
-        raise KeyError(
-            "Home vereist de canonieke bronkolom 'Locatiecode'."
-        )
-
-    result = measurements.copy()
-    canonical_locations = (
-        result["Locatiecode"]
-        .astype("string")
-        .str.strip()
-        .str.casefold()
-        .replace("", pd.NA)
-    )
-
-    missing_mask = canonical_locations.isna()
-    if missing_mask.any():
-        missing_count = int(missing_mask.sum())
-        raise ValueError(
-            "Home bevat "
-            f"{missing_count:,} meetregels zonder canonieke Locatiecode."
-        )
-
-    result["Locatiecode"] = canonical_locations
-    result["Meetpunt"] = canonical_locations
-    return result
 
 def get_home_years() -> tuple[int, ...]:
     """Return available Home years in descending display order."""
@@ -327,7 +299,7 @@ def prepare_recent_exceedances(
 
 
 def display_locations(measurements: pd.DataFrame) -> tuple[str, ...]:
-    """Return unique canonical locations in deterministic order."""
+    """Return unique display locations in deterministic case-insensitive order."""
     if "Meetpunt" not in measurements.columns:
         return ()
     return tuple(
@@ -354,7 +326,7 @@ def build_home_dashboard(
         jaren=selected_years,
         kolommen=HOME_COLUMNS,
     )
-    measurements = _use_canonical_locations(measurements)
+    measurements = prepare_krw_assessment_measurements(measurements)
     current = select_period(measurements, (current_year,))
     comparison_frame = select_period(measurements, comparison.years)
 
@@ -372,8 +344,8 @@ def build_home_dashboard(
         current_metrics=current_metrics,
         comparison_metrics=comparison_metrics,
         background=summarize_background_correction(measurements),
-        heatmap=prepare_heatmap_data(measurements),
-        sunburst=prepare_sunburst_data(measurements),
+        heatmap=prepare_heatmap_from_compliance(compliance_results),
+        sunburst=prepare_sunburst_from_compliance(compliance_results),
         recent_exceedances=prepare_recent_exceedances(
             compliance_results
         ),
